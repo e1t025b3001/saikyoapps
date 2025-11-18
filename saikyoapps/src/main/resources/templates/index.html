@@ -23,7 +23,6 @@
   </section>
 
   <script>
-    // 選択状態の簡易表示とダミーのマッチング開始処理
     (function () {
       const tttBtn = document.getElementById('tictactoe-btn');
       const startBtn = document.getElementById('start-matching-btn');
@@ -42,8 +41,9 @@
           alert('ゲームを選択してください。');
           return;
         }
-        // ダミー動作: アラート表示
-        alert('マッチングを開始します（ダミー）\n選択: ' + selectedGame + '\nユーザ: ' + /*[[${username}]]*/ '');
+        // 選択済みのゲーム名をクエリパラメータで /matching に遷移
+        const url = '/matching?game=' + encodeURIComponent(selectedGame);
+        window.location.href = url;
       });
     })();
   </script>
