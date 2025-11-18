@@ -9,6 +9,45 @@
 <body>
   <h1 th:text="'ようこそ ' + ${username} + ' さん'">ようこそ</h1>
 
+  <!-- ゲーム選択セクションを追加 -->
+  <section id="game-select">
+    <h2>ゲームを選択してください</h2>
+    <div>
+      <!-- マルバツゲームが唯一の選択肢 -->
+      <button id="tictactoe-btn" type="button">マルバツゲーム</button>
+    </div>
+    <div style="margin-top:1em;">
+      <!-- マッチング開始はダミー（押すと alert を出す） -->
+      <button id="start-matching-btn" type="button">マッチング開始</button>
+    </div>
+  </section>
+
+  <script>
+    // 選択状態の簡易表示とダミーのマッチング開始処理
+    (function () {
+      const tttBtn = document.getElementById('tictactoe-btn');
+      const startBtn = document.getElementById('start-matching-btn');
+      let selectedGame = null;
+
+      tttBtn.addEventListener('click', function () {
+        selectedGame = 'マルバツゲーム';
+        // 選択見た目の更新（シンプルな実装）
+        tttBtn.style.backgroundColor = '#cce5ff';
+        tttBtn.style.border = '1px solid #004085';
+        // 将来的に他のゲームが増えたらここでリセット処理を追加
+      });
+
+      startBtn.addEventListener('click', function () {
+        if (!selectedGame) {
+          alert('ゲームを選択してください。');
+          return;
+        }
+        // ダミー動作: アラート表示
+        alert('マッチングを開始します（ダミー）\n選択: ' + selectedGame + '\nユーザ: ' + /*[[${username}]]*/ '');
+      });
+    })();
+  </script>
+
   <form th:action="@{/logout}" method="post">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
     <button type="submit">ログアウト</button>

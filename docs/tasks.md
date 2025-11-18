@@ -1,79 +1,76 @@
-# ログイン機能実装計画（in-memory 認証：事前配布ユーザ）
+# ゲーム選択画面実装計画（ログイン後のゲーム選択画面表示）
 
 ## 概要
-本計画は、調査レポート（`docs/reports/investigate/2025-11-18_ログイン機能調査.md`）を元に、事前に配布するID/パスワードを使った in-memory 認証を Spring Security で実装するためのタスクを小さな単位に分割したものです。各タスクに必要ファイル、実行手順、DoD（完了定義）を記載します。
+本計画は、`docs/reports/investigate/2025-11-18_ゲーム選択画面実装調査.md` の調査結果に基づき、ログイン後にゲーム選択画面を表示するための実装作業を小さなタスクに分割したものです。画面要件は以下の通り。
 
-## 実装方針の要点
-- 認証方式: in-memory（`InMemoryUserDetailsManager` を利用）
-- テンプレート: Thymeleaf（`thymeleaf-extras-springsecurity6` を利用）
-- パスワード: 演習用でも可能な限り `BCrypt` ハッシュを使用する。今回の計画では事前にハッシュ値を用意し、アプリ起動時に in-memory ユーザとして登録する方式とする。
-- 認証情報配布: 配布用ドキュメント `docs/credentials.md` にユーザ一覧（ハッシュ値を含む）を記載し、運用側でプレイヤーへ配布する。
+- 画面上部に「ようこそ {username} さん」を表示する（既存の `username` モデルを利用）
+- ゲーム選択ボタン（今回は「マルバツゲーム」のみ）
+- マッチング開始ボタン（ダミーで良い。押下時は JavaScript のアラート等で良い）
+- 現状のログアウトボタンはそのまま残す
 
-## タスク一覧（優先度順）
+## 実装方針（推奨）
+- 最小変更で実現するため、既存のトップページテンプレート `index.html` を拡張してゲーム選択画面を実装する。
+- 既存の `HomeController#index` はすでに `username` を model にセットしているため、コントローラ側の変更は不要とする（必要になれば別途タスク化）。
 
-1) ブランチ作成と初期準備（必須）
-- 内容: `main` から新ブランチを作成（例: `feat/login`）。
-- 関連ファイル: なし（運用ルール）
-- DoD: 新規ブランチが作成され、以降のコミットはそのブランチ上で行う旨を README に記載できる。
+## 変更対象ファイル（相対パス）
+- `saikyoapps/src/main/resources/templates/index.html`  ← 推奨: ここにゲーム選択 UI を追加
+- （オプション）`saikyoapps/src/main/java/team1/saikyoapps/controller/HomeController.java`  ← 新しいページに分離する場合のみ
+- （オプション）`saikyoapps/src/main/java/team1/saikyoapps/config/SecurityConfig.java`  ← リダイレクト先を変更する場合のみ
 
-2) Security 設定クラス作成
-- 内容: `SecurityConfig` を作成し、`SecurityFilterChain` と `InMemoryUserDetailsManager`、`PasswordEncoder` を定義する。起動時に配布ドキュメントで指定されたハッシュ値でユーザを登録する。
+## タスク一覧（優先度順・最小単位）
+
+1) ブランチ準備（既存ブランチ利用）
+- 内容: 作業用ブランチは既に作成済みのため、新規ブランチ作成は不要です。現在の作業ブランチ上で作業を続行します。
+- 確認事項: 現在のブランチ名を確認し、作業内容を記録してください（例: `git branch --show-current`）。
+- DoD: 作業は現在のブランチ上で行われ、使用したブランチ名が done レポートに記載されていること。
+
+2) テンプレート編集: `index.html` にゲーム選択 UI を追加（必須）
+- 内容: 既存の `index.html` に以下を追加する。
+  - ヘッダのユーザ表示（既存の `username` を使用）
+  - 「マルバツゲーム」選択ボタン（見た目は button）
+  - 「マッチング開始」ボタン（押下でダミーアクション）。
+  - 必要なら簡易な JavaScript を追加し、選択状態の表示とマッチング開始時の alert を実装する。
 - 関連ファイル:
-  - `saikyoapps/src/main/java/team1/saikyoapps/config/SecurityConfig.java`
-- 実装上の注意点:
-  - `PasswordEncoder` は `BCryptPasswordEncoder` を使用すること。
-  - 起動時に `User.withUsername("foo").password("<hash>").roles("PLAYER").build()` のように、事前ハッシュを登録する（`PasswordEncoder` を注入した上で、ハッシュ済みパスワードをそのまま設定する）。
+  - `saikyoapps/src/main/resources/templates/index.html`
 - DoD:
-  - アプリ起動時に事前定義したユーザ（下記参照）が認識され、ログイン可能である。
-  - 保護対象URLへ未認証でアクセスすると `/login` にリダイレクトされることを手動で確認できる。
-  - 実行コマンド: `./gradlew bootRun` → ブラウザで `http://localhost:8080/` にアクセスしログインページが表示される。
+  - `./gradlew bootRun` でアプリを起動し、ブラウザで `http://localhost:8080/` にアクセスするとログイン画面に遷移する。
+  - 既存ユーザ（`foo` / `bar` / `buz` のいずれか）でログイン後、トップページに「ようこそ {username} さん」が表示される。
+  - 「マルバツゲーム」ボタンが見えること。
+  - 「マッチング開始」ボタンを押すとダミー動作（例: アラート）が動作すること。
 
-3) ログイン画面の実装（Thymeleaf）
-- 内容: ログインフォームを `templates/login.html` に実装（CSRF トークン、username/password フィールド、エラーメッセージ）。
+3) コントローラ確認（任意）
+- 内容: `HomeController#index` が `username` を model に渡していることを確認する。もし別ページに分離する場合は `/select` 用の GET ハンドラを追加する。
 - 関連ファイル:
-  - `saikyoapps/src/main/resources/templates/login.html`
-- DoD:
-  - `/login` でフォームが表示され、既定ユーザでログインできることを確認する。
+  - `saikyoapps/src/main/java/team1/saikyoapps/controller/HomeController.java`
+- DoD: テンプレートが `username` を受け取り表示できること。
 
-4) 配布用認証情報ドキュメント作成
-- 内容: 配布するユーザ一覧を `docs/credentials.md` に記載する。今回の計画では以下のユーザを事前登録する。
-- 配布ユーザ（事前登録：ハッシュ値を使用、ロール: PLAYER）:
-  - ユーザ: `foo`
-    - 平文パスワード（開発時確認用）: `qwert`
-    - ハッシュ（BCrypt）: `$2y$05$m/bFb4oVM/SwkJmjRNJQr.M.c46/gdDu39kvXTWoGmxVwsdf0PVAy`
-    - ロール: `PLAYER`
-  - ユーザ: `bar`
-    - 平文パスワード（開発時確認用）: `qwert`
-    - ハッシュ（BCrypt）: `$2y$05$4LwYSdqYDV3u9m3IwBWVFe.u52Uf8xLJlc1/tJfIorbnn.hLIJsaK`
-    - ロール: `PLAYER`
-  - ユーザ: `buz`
-    - 平文パスワード（開発時確認用）: `qwert`
-    - ハッシュ（BCrypt）: `$2y$05$nUsb7ufJ83W9cIpc5KiM6e.JtFcl8Um0qkgUU1yKSENPSnUD3sB/a`
-    - ロール: `PLAYER`
-- 関連ファイル: `docs/credentials.md`
-- DoD: `docs/credentials.md` が存在し、記載のハッシュ値で起動時に in-memory ユーザが登録され、平文 `qwert` でログインできることを確認できる。
+4) セキュリティ設定確認（任意）
+- 内容: `SecurityConfig` の `defaultSuccessUrl` は現在 `"/"` に設定されている。別テンプレート（例: `/select`）に分離する場合のみ `SecurityConfig` を修正する。
+- 関連ファイル: `saikyoapps/src/main/java/team1/saikyoapps/config/SecurityConfig.java`
+- DoD: ログイン成功後に期待する URL に遷移することを確認する。
 
-5) テスト作成
-- 内容: `spring-security-test` を使い認証の単体/統合テストを追加する。テストでは `qwert` を使ってログインできることを確認する（ハッシュは事前登録済み）。
-- 関連ファイル:
-  - `saikyoapps/src/test/java/team1/saikyoapps/SecurityIntegrationTests.java`
-- DoD:
-  - 主要ケース（ログイン成功、ログイン失敗、未認証からのリダイレクト）が CI 上で通ること（`./gradlew test`）。
+5) ドキュメントと完了報告の作成（必須）
+- 内容: 実装完了後に以下を作成する。
+  - `docs/reports/done/done_YYYY-MM-DD_ゲーム選択実装.md` に実装内容、確認手順、使用ブランチ名を記載する。
+  - 必要に応じて `docs/specs.md` を更新する。
+- DoD: done レポートが作成され、実装手順と確認方法が記載されていること。
 
-6) ドキュメント更新
-- 内容: `docs/specs.md` に実装概要を反映し、`docs/reports/done/done_YYYY-MM-DD_ログイン実装.md` を作成する。
-- 関連ファイル: `docs/specs.md`, `docs/reports/done/` に done レポート
-- DoD: specs.md に新機能が記載され、done レポートが作成されていること。
+## 実行手順（開発者向け）
+1. 作業中のブランチにいることを確認する: `git branch --show-current`（既に作業用ブランチがある前提）
+2. `saikyoapps/src/main/resources/templates/index.html` を編集して UI を追加
+3. `./gradlew bootRun` を実行
+4. ブラウザで `http://localhost:8080/` にアクセスし、ログイン後にゲーム選択画面が表示されることを確認する
+5. 変更をコミットし、作業が完了したら `docs/reports/done/done_YYYY-MM-DD_ゲーム選択実装.md` を作成する
 
-## テスト手順（開発者向け）
-1. `./gradlew bootRun` でアプリを起動
-2. ブラウザで `http://localhost:8080/` にアクセス -> `/login` が表示される
-3. `docs/credentials.md` に記載のユーザでログイン可能であることを確認
-4. `./gradlew test` でテストが成功すること
+## 確認手順（DoD のまとめ）
+- 起動: `./gradlew bootRun` でアプリが起動すること
+- ログイン: `http://localhost:8080/` にアクセスし、`foo` / `bar` / `buz` のいずれかでログインできること
+- 表示: ログイン後に「ようこそ {username} さん」が表示されること
+- UI: 「マルバツゲーム」ボタンが表示され、「マッチング開始」ボタンを押すとダミー動作が発生すること
 
-## 注意事項
-- リポジトリに平文パスワードを残さない運用が望ましい。docs へはダミー例を記載するか、配布は別手段を検討する。
-- 実装は計画で定めた範囲のみ行う（追加機能は都度確認）。
+## 補足・注意点
+- 本計画では機能は最小限（マルバツゲームのみ、マッチングはダミー）に留める。将来的な拡張（複数ゲーム、実際のマッチング実装）は別タスクで対応する。
+- 既存の in-memory ユーザはハッシュ済みパスワードで登録されているため、開発/検証用の平文パスワードは `docs/credentials.md` 等で管理すること。
 
 ---
 作業者: GitHub Copilot
