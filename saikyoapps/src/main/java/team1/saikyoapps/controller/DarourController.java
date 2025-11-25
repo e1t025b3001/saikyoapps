@@ -12,6 +12,6 @@ public class DarourController {
       Authentication authentication) {
 
     model.addAttribute("username", authentication.getName());
-    return "darour";
+    return "darour.html";
   }
 }
