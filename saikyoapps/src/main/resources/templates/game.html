@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title th:text="${game}">ゲーム</title>
+</head>
+
+<body>
+  <h1 th:text="'ゲーム: ' + ${game}">ゲーム</h1>
+  <p th:text="'セッションID: ' + ${sessionId}">セッションID</p>
+  <h2>参加者</h2>
+  <ul>
+    <li th:each="p : ${players}" th:text="${p}">player</li>
+  </ul>
+
+  <p>（ここにゲームの実装を追加します — 今回はダミー表示）</p>
+
+  <a th:href="@{/}">戻る</a>
+</body>
+
+</html>

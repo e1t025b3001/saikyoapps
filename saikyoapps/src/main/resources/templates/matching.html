@@ -14,7 +14,66 @@
 
   <p>対戦相手を探しています…（ダミー画面）</p>
 
+  <div id="status">参加中…</div>
+
   <a th:href="@{/}">戻る</a>
+
+  <!-- CSRF token と game 情報を DOM に埋め込む -->
+  <meta name="_csrf" th:content="${_csrf.token}" />
+  <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+  <div id="game-data" th:attr="data-game=${game}"></div>
+
+  <script>
+    (function () {
+      const statusEl = document.getElementById('status');
+      // 从 DOM 读取后端传来的 game 值
+      const game = (document.getElementById('game-data') && document.getElementById('game-data').getAttribute('data-game')) || 'unknown';
+
+      // CSRF Token を meta から取得
+      const csrfMeta = document.querySelector('meta[name="_csrf"]');
+      const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+      const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : null;
+      const csrfHeader = csrfHeaderMeta ? csrfHeaderMeta.getAttribute('content') : 'X-CSRF-TOKEN';
+
+      // 参加をリクエスト（fetch に credentials を付与して cookie を送る）
+      fetch('/matching/join', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, csrfToken ? { [csrfHeader]: csrfToken } : {}),
+        body: JSON.stringify({ game: game })
+      }).then(res => {
+        if (!res.ok) {
+          throw new Error('参加リクエスト失敗: ' + res.status);
+        }
+        return res.json();
+      })
+        .then(data => {
+          if (data.matched) {
+            // すぐマッチした場合
+            window.location.href = data.url;
+            return;
+          }
+          // まだマッチしていない場合は定期ポーリング
+          statusEl.textContent = '待機中…';
+          const pollInterval = setInterval(() => {
+            fetch('/matching/status?game=' + encodeURIComponent(game), { credentials: 'same-origin' })
+              .then(r => r.json())
+              .then(s => {
+                if (s.matched) {
+                  clearInterval(pollInterval);
+                  window.location.href = s.url;
+                }
+              })
+              .catch(e => console.error(e));
+          }, 2000);
+        })
+        .catch(err => {
+          console.error(err);
+          statusEl.textContent = '参加に失敗しました。';
+        });
+    })();
+  </script>
+
 </body>
 
 </html>
