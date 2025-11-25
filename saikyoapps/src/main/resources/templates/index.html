@@ -13,36 +13,43 @@
   <section id="game-select">
     <h2>ゲームを選択してください</h2>
     <div>
-      <!-- マルバツゲームが唯一の選択肢 -->
-      <button id="tictactoe-btn" type="button">マルバツゲーム</button>
+      <button id="tictactoe-btn" type="button" data-slug="tictactoe">マルバツゲーム</button>
+      <button id="othello-btn" type="button" data-slug="othello">オセロ</button>
+      <button id="gomoku-btn" type="button" data-slug="gomoku">五目並べ</button>
+      <button id="concentration-btn" type="button" data-slug="concentration">神経衰弱</button>
+      <button id="uno-btn" type="button" data-slug="uno">UNO</button>
+      <button id="daifugo-btn" type="button" data-slug="daifugo">大老二（大富豪）</button>
     </div>
     <div style="margin-top:1em;">
-      <!-- マッチング開始はダミー（押すと alert を出す） -->
       <button id="start-matching-btn" type="button">マッチング開始</button>
     </div>
   </section>
 
   <script>
     (function () {
-      const tttBtn = document.getElementById('tictactoe-btn');
+      const gameButtons = document.querySelectorAll('#game-select button[data-slug]');
       const startBtn = document.getElementById('start-matching-btn');
-      let selectedGame = null;
+      let selectedGameSlug = null;
+      let selectedGameLabel = null;
 
-      tttBtn.addEventListener('click', function () {
-        selectedGame = 'マルバツゲーム';
-        // 選択見た目の更新（シンプルな実装）
-        tttBtn.style.backgroundColor = '#cce5ff';
-        tttBtn.style.border = '1px solid #004085';
-        // 将来的に他のゲームが増えたらここでリセット処理を追加
+      gameButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+          // 選択状態を管理
+          gameButtons.forEach(b => { b.style.backgroundColor = ''; b.style.border = ''; });
+          this.style.backgroundColor = '#cce5ff';
+          this.style.border = '1px solid #004085';
+          selectedGameSlug = this.getAttribute('data-slug');
+          selectedGameLabel = this.textContent;
+        });
       });
 
       startBtn.addEventListener('click', function () {
-        if (!selectedGame) {
+        if (!selectedGameSlug) {
           alert('ゲームを選択してください。');
           return;
         }
-        // 選択済みのゲーム名をクエリパラメータで /matching に遷移
-        const url = '/matching?game=' + encodeURIComponent(selectedGame);
+        // 選択済みのゲームスラッグをクエリパラメータで /matching に遷移
+        const url = '/matching?game=' + encodeURIComponent(selectedGameSlug);
         window.location.href = url;
       });
     })();

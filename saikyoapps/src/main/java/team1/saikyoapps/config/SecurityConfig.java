@@ -29,18 +29,27 @@ public class SecurityConfig {
         .password("{bcrypt}$2y$05$m/bFb4oVM/SwkJmjRNJQr.M.c46/gdDu39kvXTWoGmxVwsdf0PVAy")
         .roles("PLAYER")
         .build();
+    // password is "qwert"
 
     UserDetails bar = User.withUsername("bar")
         .password("{bcrypt}$2y$05$4LwYSdqYDV3u9m3IwBWVFe.u52Uf8xLJlc1/tJfIorbnn.hLIJsaK")
         .roles("PLAYER")
         .build();
+    // password is "qwert"
 
     UserDetails buz = User.withUsername("buz")
         .password("{bcrypt}$2y$05$nUsb7ufJ83W9cIpc5KiM6e.JtFcl8Um0qkgUU1yKSENPSnUD3sB/a")
         .roles("PLAYER")
         .build();
+    // password is "qwert"
 
-    return new InMemoryUserDetailsManager(foo, bar, buz);
+    UserDetails buz2 = User.withUsername("buz2")
+        .password("{bcrypt}$2y$05$m/bFb4oVM/SwkJmjRNJQr.M.c46/gdDu39kvXTWoGmxVwsdf0PVAy")
+        .roles("PLAYER")
+        .build();
+    // password is "qwert"
+
+    return new InMemoryUserDetailsManager(foo, bar, buz, buz2);
   }
 
   @Bean
