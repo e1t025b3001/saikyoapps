@@ -12,7 +12,10 @@
   <p th:text="'ユーザー: ' + ${username}">ユーザー: guest</p>
   <p th:text="'選択ゲーム: ' + ${game}">選択ゲーム: ー</p>
 
-  <p>対戦相手を探しています…（ダミー画面）</p>
+
+  <th:block th:if="${waitingCount}">
+    <p>対戦相手を探しています…（[[${waitingCount}]]）</p>
+  </th:block>
 
   <a th:href="@{/}">戻る</a>
 </body>
