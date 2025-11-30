@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>マッチング成功</title>
+</head>
+
+<body>
+  <h1>マッチング成功！まもなくゲーム画面に移動します。</h1>
+  <p th:text="'ゲーム: ' + ${game}">ゲーム</p>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const game = /*[[${game}]]*/ 'marubatsu';
+    setTimeout(function () {
+      window.location.href = '/' + game;
+    }, 1500);
+    /*]]>*/
+  </script>
+
+  <a th:href="@{/}">ゲーム選択に戻る</a>
+</body>
+
+</html>
