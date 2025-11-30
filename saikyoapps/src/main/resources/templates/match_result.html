@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>対戦結果</title>
+</head>
+
+<body>
+  <h1 th:text="'ゲーム: ' + ${game}">ゲーム</h1>
+  <p th:text="'勝者: ' + ${winner}">勝者</p>
+  <p th:text="'敗者: ' + ${loser}">敗者</p>
+  <a th:href="@{/}">ゲーム選択に戻る</a>
+</body>
+
+</html>

@@ -12,28 +12,41 @@
   <!-- ゲーム選択セクションを追加 -->
   <section id="game-select">
     <h2>ゲームを選択してください</h2>
-    <div>
-      <!-- マルバツゲームが唯一の選択肢 -->
-      <button id="tictactoe-btn" type="button">マルバツゲーム</button>
+    <div id="game-buttons">
+      <!-- 新增多個按鈕，data-game 使用標準化識別字串 -->
+      <button class="game-btn" data-game="marubatsu" type="button">マルバツゲーム</button>
+      <button class="game-btn" data-game="othello" type="button">オセロ</button>
+      <button class="game-btn" data-game="gomoku" type="button">5木並べ</button>
+      <button class="game-btn" data-game="shinkeisuijaku" type="button">神経衰弱</button>
+      <button class="game-btn" data-game="uno" type="button">UNO</button>
+      <button class="game-btn" data-game="dairo" type="button">大老二</button>
     </div>
     <div style="margin-top:1em;">
-      <!-- マッチング開始はダミー（押すと alert を出す） -->
+      <!-- マッチング開始 -->
       <button id="start-matching-btn" type="button">マッチング開始</button>
     </div>
   </section>
 
   <script>
     (function () {
-      const tttBtn = document.getElementById('tictactoe-btn');
+      const gameButtons = document.querySelectorAll('.game-btn');
       const startBtn = document.getElementById('start-matching-btn');
       let selectedGame = null;
 
-      tttBtn.addEventListener('click', function () {
-        selectedGame = 'マルバツゲーム';
-        // 選択見た目の更新（シンプルな実装）
-        tttBtn.style.backgroundColor = '#cce5ff';
-        tttBtn.style.border = '1px solid #004085';
-        // 将来的に他のゲームが増えたらここでリセット処理を追加
+      function clearSelectionStyles() {
+        gameButtons.forEach(b => {
+          b.style.backgroundColor = '';
+          b.style.border = '';
+        });
+      }
+
+      gameButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+          selectedGame = btn.getAttribute('data-game');
+          clearSelectionStyles();
+          btn.style.backgroundColor = '#cce5ff';
+          btn.style.border = '1px solid #004085';
+        });
       });
 
       startBtn.addEventListener('click', function () {
@@ -41,7 +54,7 @@
           alert('ゲームを選択してください。');
           return;
         }
-        // 選択済みのゲーム名をクエリパラメータで /matching に遷移
+        // 選択した標準化識別字串をクエリパラメータで /matching に遷移
         const url = '/matching?game=' + encodeURIComponent(selectedGame);
         window.location.href = url;
       });
