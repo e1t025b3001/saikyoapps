@@ -35,4 +35,14 @@ public class MatchingController {
     model.addAttribute("game", game != null ? game : "未選択");
     return "matching";
   }
+
+  @GetMapping("/tictactoe")
+  public String tictactoe(Model model, Authentication authentication) {
+    if (authentication != null) {
+      model.addAttribute("username", authentication.getName());
+    } else {
+      model.addAttribute("username", "guest");
+    }
+    return "tictactoe";
+  }
 }

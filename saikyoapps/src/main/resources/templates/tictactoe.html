@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>三目並べ</title>
+  <style>
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .cell {
+      width: 100px;
+      height: 100px;
+      font-size: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: #fff;
+      border: 2px solid #444;
+      user-select: none;
+    }
+
+    .cell.disabled {
+      cursor: default;
+      background: #eee;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>三目並べ（まるばつ）</h1>
+
+  <p th:text="'ユーザー: ' + ${username}">ユーザー: guest</p>
+
+  <div id="game">
+    <div id="status">現在の手番: <span id="currentPlayer">先手 (X)</span></div>
+    <div id="board">
+      <!-- 3x3 のセルを JS で初期化します -->
+      <div class="cell" data-row="0" data-col="0"></div>
+      <div class="cell" data-row="0" data-col="1"></div>
+      <div class="cell" data-row="0" data-col="2"></div>
+
+      <div class="cell" data-row="1" data-col="0"></div>
+      <div class="cell" data-row="1" data-col="1"></div>
+      <div class="cell" data-row="1" data-col="2"></div>
+
+      <div class="cell" data-row="2" data-col="0"></div>
+      <div class="cell" data-row="2" data-col="1"></div>
+      <div class="cell" data-row="2" data-col="2"></div>
+    </div>
+
+    <div id="result" style="margin-top:10px;font-weight:bold"></div>
+    <button id="resetBtn" style="margin-top:10px">リセット</button>
+  </div>
+
+  <a th:href="@{/}">戻る</a>
+
+  <script src="/js/tictactoe.js"></script>
+</body>
+
+</html>

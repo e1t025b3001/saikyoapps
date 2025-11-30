@@ -1,76 +1,90 @@
-# ゲーム選択画面実装計画（ログイン後のゲーム選択画面表示）
+# 三目並べ（まるばつ）実装計画
 
 ## 概要
-本計画は、`docs/reports/investigate/2025-11-18_ゲーム選択画面実装調査.md` の調査結果に基づき、ログイン後にゲーム選択画面を表示するための実装作業を小さなタスクに分割したものです。画面要件は以下の通り。
+- 目的: 同一端末で先手・後手を交互に操作して遊べる「三目並べ」機能を実装する（まずはクライアント（JS）で完結する簡易版を優先する）。
+- 範囲: UI（テンプレート + 静的JS）、サーバーはテンプレート配信のみ。セッション永続化やネットワーク対戦は含まない。
+- 前提: 本計画は調査レポート `docs/reports/investigate/2025-11-30_三目並べ実装調査.md` を基に作成。
 
-- 画面上部に「ようこそ {username} さん」を表示する（既存の `username` モデルを利用）
-- ゲーム選択ボタン（今回は「マルバツゲーム」のみ）
-- マッチング開始ボタン（ダミーで良い。押下時は JavaScript のアラート等で良い）
-- 現状のログアウトボタンはそのまま残す
+## 関連ファイル（必ず確認するもの）
+- `saikyoapps/src/main/resources/templates/matching.html`
+- `saikyoapps/src/main/resources/templates/login.html`
+- `saikyoapps/src/main/resources/templates/index.html`
+- `saikyoapps/src/main/resources/templates/`（新規 `tictactoe.html` を作成予定）
+- `saikyoapps/src/main/resources/static/js/`（新規 `tictactoe.js` を作成予定）
+- `saikyoapps/src/main/java/team1/saikyoapps/controller/`（必要であれば `TicTacToeController.java` を追加）
+- `docs/specs.md`（実装後に更新すること）
 
-## 実装方針（推奨）
-- 最小変更で実現するため、既存のトップページテンプレート `index.html` を拡張してゲーム選択画面を実装する。
-- 既存の `HomeController#index` はすでに `username` を model にセットしているため、コントローラ側の変更は不要とする（必要になれば別途タスク化）。
+## タスク一覧（最小単位で分割）
 
-## 変更対象ファイル（相対パス）
-- `saikyoapps/src/main/resources/templates/index.html`  ← 推奨: ここにゲーム選択 UI を追加
-- （オプション）`saikyoapps/src/main/java/team1/saikyoapps/controller/HomeController.java`  ← 新しいページに分離する場合のみ
-- （オプション）`saikyoapps/src/main/java/team1/saikyoapps/config/SecurityConfig.java`  ← リダイレクト先を変更する場合のみ
+1) テンプレート追加: ゲーム画面作成
+- 内容: 3x3 グリッド、現在手番表示、勝敗表示、リセットボタンを持つ `tictactoe.html` を作成
+- 関連ファイル: `saikyoapps/src/main/resources/templates/tictactoe.html`
+- 実行手順:
+  1. `tictactoe.html` を作成し、Thymeleaf ベースで必要な要素を配置する
+  2. `tictactoe.html` から `static/js/tictactoe.js` を読み込むように設定する
+- 入力/出力: ブラウザでの視覚的要素（HTML）を追加
+- DoD (Definition of Done):
+  - `gradle bootRun` 実行後、`http://localhost:8080/tictactoe` にアクセスするとゲーム画面が表示される（ログインが必要な場合は既存の認証を使用）。
+  - 画面に 3x3 マス、手番表示、リセットボタンが存在する。
 
-## タスク一覧（優先度順・最小単位）
-
-1) ブランチ準備（既存ブランチ利用）
-- 内容: 作業用ブランチは既に作成済みのため、新規ブランチ作成は不要です。現在の作業ブランチ上で作業を続行します。
-- 確認事項: 現在のブランチ名を確認し、作業内容を記録してください（例: `git branch --show-current`）。
-- DoD: 作業は現在のブランチ上で行われ、使用したブランチ名が done レポートに記載されていること。
-
-2) テンプレート編集: `index.html` にゲーム選択 UI を追加（必須）
-- 内容: 既存の `index.html` に以下を追加する。
-  - ヘッダのユーザ表示（既存の `username` を使用）
-  - 「マルバツゲーム」選択ボタン（見た目は button）
-  - 「マッチング開始」ボタン（押下でダミーアクション）。
-  - 必要なら簡易な JavaScript を追加し、選択状態の表示とマッチング開始時の alert を実装する。
-- 関連ファイル:
-  - `saikyoapps/src/main/resources/templates/index.html`
+2) 静的JS実装: クライアント側ゲームロジック
+- 内容: `tictactoe.js` に盤面管理、手番管理、勝敗判定（横・縦・斜め）、引き分け判定、UI更新を実装
+- 関連ファイル: `saikyoapps/src/main/resources/static/js/tictactoe.js`
+- 実行手順:
+  1. 盤面を 2 次元配列で管理（0=空, 1=先手, 2=後手）
+  2. クリックイベントでセルに手を置き、手番を切り替え
+  3. 各手後に勝敗判定・引き分け判定を行い、結果を表示
+  4. リセットボタンで盤面を初期化
+- 入力/出力: ユーザーのクリック操作 -> UI 更新
 - DoD:
-  - `./gradlew bootRun` でアプリを起動し、ブラウザで `http://localhost:8080/` にアクセスするとログイン画面に遷移する。
-  - 既存ユーザ（`foo` / `bar` / `buz` のいずれか）でログイン後、トップページに「ようこそ {username} さん」が表示される。
-  - 「マルバツゲーム」ボタンが見えること。
-  - 「マッチング開始」ボタンを押すとダミー動作（例: アラート）が動作すること。
+  - 先手→後手でクリック操作が可能で、正しいマークがセルに表示される
+  - 勝利・引き分けが正しく判定され、画面に通知される
+  - リセットで初期状態に戻る
 
-3) コントローラ確認（任意）
-- 内容: `HomeController#index` が `username` を model に渡していることを確認する。もし別ページに分離する場合は `/select` 用の GET ハンドラを追加する。
-- 関連ファイル:
-  - `saikyoapps/src/main/java/team1/saikyoapps/controller/HomeController.java`
-- DoD: テンプレートが `username` を受け取り表示できること。
+3) サーバーのルーティング（テンプレート配信のみ、必要なら）
+- 内容: GET `/tictactoe` を提供するコントローラを追加（既存コントローラに追記しても可）
+- 関連ファイル: `saikyoapps/src/main/java/team1/saikyoapps/controller/TicTacToeController.java`（または既存の `MatchingController.java` に追加）
+- 実行手順:
+  1. コントローラの作成/編集で GET `/tictactoe` を実装し `tictactoe.html` を返す
+  2. 必要ならセキュリティ設定でアクセス制御を確認
+- 入力/出力: ブラウザの GET リクエスト -> テンプレートを返す
+- DoD:
+  - `http://localhost:8080/tictactoe` にアクセスして `tictactoe.html` が表示される
 
-4) セキュリティ設定確認（任意）
-- 内容: `SecurityConfig` の `defaultSuccessUrl` は現在 `"/"` に設定されている。別テンプレート（例: `/select`）に分離する場合のみ `SecurityConfig` を修正する。
-- 関連ファイル: `saikyoapps/src/main/java/team1/saikyoapps/config/SecurityConfig.java`
-- DoD: ログイン成功後に期待する URL に遷移することを確認する。
+4) ドキュメント更新
+- 内容: 実装完了後、以下を更新
+  - `docs/reports/done/done_YYYY-MM-DD_三目並べ実装.md` に作業内容、確認手順、ブランチ名を記載
+  - `docs/specs.md` に機能追加を反映
+- 関連ファイル: `docs/reports/done/`, `docs/specs.md`
+- DoD:
+  - 上記ファイルが作成/更新され、手順に従って動作確認ができる
 
-5) ドキュメントと完了報告の作成（必須）
-- 内容: 実装完了後に以下を作成する。
-  - `docs/reports/done/done_YYYY-MM-DD_ゲーム選択実装.md` に実装内容、確認手順、使用ブランチ名を記載する。
-  - 必要に応じて `docs/specs.md` を更新する。
-- DoD: done レポートが作成され、実装手順と確認方法が記載されていること。
+5) テスト（任意だが推奨）
+- 内容: サーバー側ロジックを追加する場合はユニットテストを作成。今回はクライアント実装のため手動テストを推奨
+- 関連ファイル: `src/test/java/...`（該当テストファイルを作成）
+- DoD:
+  - 勝敗判定ロジックに関するユニットテスト（サーバー側実装時）が成功する
+  - 手動テスト手順が `docs/reports/done/` に記載される
 
-## 実行手順（開発者向け）
-1. 作業中のブランチにいることを確認する: `git branch --show-current`（既に作業用ブランチがある前提）
-2. `saikyoapps/src/main/resources/templates/index.html` を編集して UI を追加
-3. `./gradlew bootRun` を実行
-4. ブラウザで `http://localhost:8080/` にアクセスし、ログイン後にゲーム選択画面が表示されることを確認する
-5. 変更をコミットし、作業が完了したら `docs/reports/done/done_YYYY-MM-DD_ゲーム選択実装.md` を作成する
+## 優先度と見積もり（粗）
+- 高: タスク1（テンプレート追加）, タスク2（静的JS実装） — それぞれ 1〜2 時間程度（合計 2〜4 時間）
+- 中: タスク3（ルーティング） — 30 分〜1 時間
+- 低: タスク5（ユニットテスト）/ ドキュメント整備 — 1 時間
 
-## 確認手順（DoD のまとめ）
-- 起動: `./gradlew bootRun` でアプリが起動すること
-- ログイン: `http://localhost:8080/` にアクセスし、`foo` / `bar` / `buz` のいずれかでログインできること
-- 表示: ログイン後に「ようこそ {username} さん」が表示されること
-- UI: 「マルバツゲーム」ボタンが表示され、「マッチング開始」ボタンを押すとダミー動作が発生すること
+## 実施手順（順序）
+1. `main` ブランチで作業することを確認する
+2. 新しいブランチを作成: 例 `feat/tictactoe-client`
+3. タスク1 → タスク2 → タスク3（必要なら）→ タスク4 の順で実装
+4. 動作確認（DoD）を満たしたら `docs/reports/done/` に完了レポートを作成
 
-## 補足・注意点
-- 本計画では機能は最小限（マルバツゲームのみ、マッチングはダミー）に留める。将来的な拡張（複数ゲーム、実際のマッチング実装）は別タスクで対応する。
-- 既存の in-memory ユーザはハッシュ済みパスワードで登録されているため、開発/検証用の平文パスワードは `docs/credentials.md` 等で管理すること。
+## 動作確認手順（簡潔）
+1. ターミナルでプロジェクトルートに移動
+2. `./gradlew bootRun` を実行
+3. ブラウザで `http://localhost:8080/tictactoe` にアクセス（ログインが必要な場合は既存の認証を使用）
+4. 先手→後手でクリックして、勝敗・引き分けが正しく表示されることを確認
+
+## 備考 / ユーザー確認事項
+- 本計画は「クライアント（JS）完結」前提です。サーバー側で状態管理を希望する場合はその旨を通知してください。サーバー実装の場合はタスク分割とDoDを再作成します。
 
 ---
-作業者: GitHub Copilot
+作業報告: このファイルは `docs/tasks.md` を上書きしました。次に実装フェーズに進めてよいか確認してください。
