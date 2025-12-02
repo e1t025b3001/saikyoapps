@@ -35,7 +35,7 @@
   - メソッド: void initialize(), void shuffle(), DealResult dealThreePlayers(), Card draw(), int remaining()
   - 備考: Deck は DarourGameState.deck として各 darourGameId ごとに存在し、配牌/ドロー等の操作はトランザクション内で一貫して行うこと。
 - team1.saikyoapps.model.DarourPlayer
-  - フィールド: String playerId; String userId; String name; List<Card> hand; int position
+  - フィールド: String playerId; String darourGameId; String userId; String name; String handJson; int position
   - メソッド: void receiveCards(List<Card> cards), void removeCards(List<Card> cards)
 - team1.saikyoapps.model.Hand（抽象）
   - メソッド: HandRank getHandRank(), boolean isValid(), int compareTo(Hand other)

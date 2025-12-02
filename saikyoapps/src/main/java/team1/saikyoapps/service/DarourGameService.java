@@ -41,7 +41,8 @@ public class DarourGameService {
 
   /**
    * 新しい DarourGame を作成して DB に保存し、キャッシュにも格納する
-   * @param ownerUserId オーナーの userId
+   * 
+   * @param ownerUserId      オーナーの userId
    * @param initialStateJson 初期 state を JSON 文字列で渡す
    * @return 生成された darourGameId
    */
