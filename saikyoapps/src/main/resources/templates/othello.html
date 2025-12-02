@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>オセロ</title>
+</head>
+
+<body th:attr="data-game=${game}">
+  <h1>オセロ遊戲畫面</h1>
+
+  <!-- 放棄/返回（按下代表此人投降，另一方勝利） -->
+  <form th:action="@{/match/forfeit}" method="post">
+    <input type="hidden" name="game" th:value="${game}" />
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+    <button type="submit">戻る（投降）</button>
+  </form>
+
+  <a th:href="@{/}">直接返回選單（不會更新狀態）</a>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const game = /*[[${game}]]*/ 'othello';
+    /*]]>*/
+
+    (function () {
+      const pollInterval = 2000;
+      let timer = setInterval(function () {
+        fetch('/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store' })
+          .then(r => r.json())
+          .then(j => {
+            if (j.status === 'lobby') {
+              // 當狀態回到 lobby，跳回選單
+              window.location.href = '/';
+            }
+          }).catch(e => console.error(e));
+      }, pollInterval);
+
+      window.addEventListener('beforeunload', function () { clearInterval(timer); });
+    })();
+  </script>
+</body>
+
+</html>

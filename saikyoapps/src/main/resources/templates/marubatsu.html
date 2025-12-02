@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>マルバツゲーム</title>
+</head>
+
+<body th:attr="data-game=${game}">
+  <h1>マルバツゲーム遊戲画面</h1>
+
+  <form th:action="@{/match/forfeit}" method="post">
+    <input type="hidden" name="game" th:value="${game}" />
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+    <button type="submit">戻る（投降）</button>
+  </form>
+
+  <a th:href="@{/}">直接返回選單（不會更新狀態）</a>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const game = /*[[${game}]]*/ 'marubatsu';
+    /*]]>*/
+    (function () {
+      const pollInterval = 2000;
+      let timer = setInterval(function () {
+        fetch('/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store' })
+          .then(r => r.json())
+          .then(j => {
+            if (j.status === 'lobby') {
+              window.location.href = '/';
+            }
+          }).catch(e => console.error(e));
+      }, pollInterval);
+      window.addEventListener('beforeunload', function () { clearInterval(timer); });
+    })();
+  </script>
+</body>
+
+</html>
