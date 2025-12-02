@@ -274,4 +274,13 @@ public class MatchingController {
     model.addAttribute("loser", loser);
     return "match_result";
   }
+  @GetMapping("/tictactoe")
+  public String tictactoe(Model model, Authentication authentication) {
+    if (authentication != null) {
+      model.addAttribute("username", authentication.getName());
+    } else {
+      model.addAttribute("username", "guest");
+    }
+    return "tictactoe";
+  }
 }
