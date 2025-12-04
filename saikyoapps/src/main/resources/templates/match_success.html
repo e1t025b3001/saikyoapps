@@ -10,11 +10,17 @@
   <h1>マッチング成功！まもなくゲーム画面に移動します。</h1>
   <p th:text="'ゲーム: ' + ${game}">ゲーム</p>
 
+  <!-- matchId を隠し要素として保持 -->
+  <input type="hidden" id="matchId" th:value="${matchId}" />
+
   <script th:inline="javascript">
     /*<![CDATA[*/
     const game = /*[[${game}]]*/ 'marubatsu';
     setTimeout(function () {
-      window.location.href = '/' + game;
+      const midEl = document.getElementById('matchId');
+      const mid = midEl ? midEl.value : '';
+      const dest = '/' + game + (mid ? '?matchId=' + encodeURIComponent(mid) : '');
+      window.location.href = dest;
     }, 1500);
     /*]]>*/
   </script>

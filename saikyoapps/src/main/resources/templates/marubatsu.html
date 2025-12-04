@@ -17,6 +17,30 @@
 
   <a th:href="@{/}">直接返回選單（不會更新狀態）</a>
 
+  <div id="game">
+    <div id="status">現在の手番: <span id="currentPlayer">先手 (X)</span></div>
+    <div id="board">
+      <div class="cell" data-row="0" data-col="0"></div>
+      <div class="cell" data-row="0" data-col="1"></div>
+      <div class="cell" data-row="0" data-col="2"></div>
+
+      <div class="cell" data-row="1" data-col="0"></div>
+      <div class="cell" data-row="1" data-col="1"></div>
+      <div class="cell" data-row="1" data-col="2"></div>
+
+      <div class="cell" data-row="2" data-col="0"></div>
+      <div class="cell" data-row="2" data-col="1"></div>
+      <div class="cell" data-row="2" data-col="2"></div>
+    </div>
+
+    <div id="result" style="margin-top:10px;font-weight:bold"></div>
+  </div>
+
+  <!-- CSRF hidden for JS -->
+  <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
+  <!-- matchId hidden for JS -->
+  <input type="hidden" id="matchId" name="matchId" th:value="${matchId}" />
+
   <script th:inline="javascript">
     /*<![CDATA[*/
     const game = /*[[${game}]]*/ 'marubatsu';
@@ -35,6 +59,8 @@
       window.addEventListener('beforeunload', function () { clearInterval(timer); });
     })();
   </script>
+
+  <script src="/js/marubatsu.js"></script>
 </body>
 
 </html>

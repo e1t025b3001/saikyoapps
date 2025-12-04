@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import team1.saikyoapps.model.MatchingQueue;
 import team1.saikyoapps.model.MatchingQueueMapper;
 import team1.saikyoapps.model.PlayerStatus;
+import team1.saikyoapps.service.MatchService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,9 @@ import java.util.Map;
 public class MatchingController {
   @Autowired
   MatchingQueueMapper matchingQueueMapper;
+
+  @Autowired
+  MatchService matchService;
 
   @GetMapping("/matching")
   public String matching(@RequestParam(name = "game", required = false) String game, Model model,
@@ -259,6 +263,27 @@ public class MatchingController {
     }
 
     model.addAttribute("game", game != null ? game : "marubatsu");
+
+    // ここで該当ユーザが参加しているマッチが既に存在するか確認し、なければマッチを作成して matchId を model に入れる
+    if (authentication != null && "marubatsu".equals(game)) {
+      // 參加者一覧を取得
+      List<String> playing = matchingQueueMapper.findPlayingUsersByGame(game);
+      // playing には通常 2 人のユーザ名が入っているはず
+      if (playing.size() >= 2) {
+        String p1 = playing.get(0);
+        String p2 = playing.get(1);
+        // 既に作成済みのマッチがあるか確認
+        String existing = matchService.findMatchIdByPlayer(authentication.getName(), game);
+        if (existing == null) {
+          // 先頭2人でマッチを作成
+          String matchId = matchService.createMatch(game, p1, p2);
+          model.addAttribute("matchId", matchId);
+        } else {
+          model.addAttribute("matchId", existing);
+        }
+      }
+    }
+
     return "match_success";
   }
 
