@@ -1,6 +1,12 @@
 // marubatsu.js
 (function () {
-  const matchId = new URLSearchParams(window.location.search).get('matchId');
+  let matchId = new URLSearchParams(window.location.search).get('matchId');
+  // URL にない場合は hidden input から取得する
+  if (!matchId) {
+    const midEl = document.getElementById('matchId');
+    if (midEl && midEl.value) matchId = midEl.value;
+  }
+
   const boardElem = document.getElementById('board');
   const cells = Array.from(document.querySelectorAll('.cell'));
   const statusElem = document.getElementById('currentPlayer');
@@ -12,12 +18,15 @@
   async function fetchState() {
     if (!matchId) return;
     try {
-      const res = await fetch('/match/state?matchId=' + encodeURIComponent(matchId), { cache: 'no-store' });
+      const res = await fetch('/api/match/state?matchId=' + encodeURIComponent(matchId), { cache: 'no-store' });
+      if (!res.ok) {
+        console.error('fetchState failed', res.status, await res.text());
+        return;
+      }
       const j = await res.json();
+      console.log('fetchState', j);
       if (!j) return;
-      // j.board is array of 9 ints
       const board = j.board || [];
-      // render
       cells.forEach(cell => {
         const r = parseInt(cell.getAttribute('data-row'));
         const c = parseInt(cell.getAttribute('data-col'));
@@ -55,11 +64,12 @@
   }
 
   async function sendMove(pos) {
-    if (!matchId) return;
+    if (!matchId) { alert('matchId がありません'); return; }
     try {
       const tokenEl = document.querySelector('input[name="_csrf"]');
       const token = tokenEl ? tokenEl.value : null;
-      const resp = await fetch('/match/move', {
+      console.log('sendMove', { matchId, pos, token });
+      const resp = await fetch('/api/match/move', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,17 +78,23 @@
         body: JSON.stringify({ matchId: matchId, pos: pos })
       });
       const j = await resp.json();
+      console.log('move response', j);
       if (j.error) {
+        // エラーメッセージを画面に表示
         alert('Error: ' + j.error);
+        // 失敗したら直ちに再描画
+        fetchState();
       }
       // state は次の poll で取得される
     } catch (e) {
       console.error(e);
+      alert('通信エラーが発生しました');
     }
   }
 
   function onCellClick(e) {
     const cell = e.currentTarget;
+    if (cell.classList.contains('disabled')) return;
     const r = parseInt(cell.getAttribute('data-row'));
     const c = parseInt(cell.getAttribute('data-col'));
     const idx = r * 3 + c;
@@ -94,5 +110,7 @@
     fetchState();
     pollTimer = setInterval(fetchState, pollInterval);
     window.addEventListener('beforeunload', function () { if (pollTimer) clearInterval(pollTimer); });
+  } else {
+    console.warn('marubatsu: no matchId detected');
   }
 })();

@@ -89,6 +89,13 @@ public class MatchingController {
         }
         // 在 model 中放入 game，確保直接回傳 match_success 時能正確導向
         model.addAttribute("game", game);
+        // ここでマッチを作成して matchId を model に入れる（両端末が受け取れるようにする）
+        if ("marubatsu".equals(game)) {
+          String p1 = waiters.get(0).getUserName();
+          String p2 = waiters.get(1).getUserName();
+          String matchId = matchService.createMatch(game, p1, p2);
+          model.addAttribute("matchId", matchId);
+        }
         return "match_success"; // 需建立 match_success.html
       }
     }
