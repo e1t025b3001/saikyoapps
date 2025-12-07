@@ -3,37 +3,276 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>5木並べ</title>
+  <title>五目並べ（Gomoku）</title>
+  <!-- CSRF tokens for AJAX -->
+  <meta name="_csrf" th:content="${_csrf.token}" />
+  <meta name="_csrf_header" th:content="${_csrf.headerName}" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    #boardWrap {
+      width: 600px;
+      margin: 16px auto;
+    }
+
+    canvas {
+      background: #f5deb3;
+      display: block;
+      margin: 0 auto;
+      border: 1px solid #333;
+    }
+
+    #info {
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    #controls {
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    button {
+      padding: 8px 12px;
+    }
+  </style>
 </head>
 
 <body th:attr="data-game=${game}">
-  <h1>5木並べ遊戲畫面</h1>
+  <h1 style="text-align:center;">五目並べ</h1>
 
-  <form th:action="@{/match/forfeit}" method="post">
+  <form th:action="@{/match/forfeit}" method="post" id="forfeitForm">
     <input type="hidden" name="game" th:value="${game}" />
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-    <button type="submit">戻る（投降）</button>
+    <div id="controls">
+      <button type="submit">放棄（返回大廳）</button>
+    </div>
   </form>
 
-  <a th:href="@{/}">直接返回選單（不會更新狀態）</a>
+  <div id="boardWrap">
+    <canvas id="gomokuBoard" width="600" height="600"></canvas>
+    <div id="info">
+      <div id="turnInfo">等待中...</div>
+      <div id="result" style="color: darkred; font-weight: bold;"></div>
+    </div>
+  </div>
 
   <script th:inline="javascript">
     /*<![CDATA[*/
     const game = /*[[${game}]]*/ 'gomoku';
     /*]]>*/
-    (function () {
-      const pollInterval = 2000;
-      let timer = setInterval(function () {
-        fetch('/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store' })
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+      const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+      const origin = window.location.origin;
+
+      const size = 15;
+      const canvas = document.getElementById('gomokuBoard');
+      const ctx = canvas.getContext('2d');
+      // 處理高 DPI
+      const DPR = window.devicePixelRatio || 1;
+      const cssWidth = canvas.width;
+      const cssHeight = canvas.height;
+      canvas.width = Math.floor(cssWidth * DPR);
+      canvas.height = Math.floor(cssHeight * DPR);
+      canvas.style.width = cssWidth + 'px';
+      canvas.style.height = cssHeight + 'px';
+      ctx.scale(DPR, DPR);
+
+      const cell = cssWidth / (size - 1);
+      let board = Array.from({ length: size }, () => Array(size).fill(0));
+      let myColor = null; // 1 黑, 2 白 - 伺服器分配時指定
+      let currentTurn = 1;
+      let finished = false;
+      let gameId = null;
+      let pollingGameTimer = null;
+
+      function drawBoard() {
+        // 清除畫面
+        ctx.clearRect(0, 0, cssWidth, cssHeight);
+        // 繪製格線
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < size; i++) {
+          ctx.beginPath();
+          ctx.moveTo(0, i * cell);
+          ctx.lineTo(cssWidth, i * cell);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(i * cell, 0);
+          ctx.lineTo(i * cell, cssHeight);
+          ctx.stroke();
+        }
+        // 繪製棋子
+        for (let r = 0; r < size; r++) {
+          for (let c = 0; c < size; c++) {
+            const v = board[r][c];
+            if (v !== 0) drawStone(r, c, v);
+          }
+        }
+      }
+
+      function drawStone(r, c, v) {
+        const x = c * cell;
+        const y = r * cell;
+        ctx.beginPath();
+        ctx.arc(x, y, cell * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = (v === 1) ? 'black' : 'white';
+        ctx.fill();
+        ctx.strokeStyle = '#222';
+        ctx.stroke();
+      }
+
+      function posToCell(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const rx = clientX - rect.left;
+        const ry = clientY - rect.top;
+        const c = Math.round(rx / cell);
+        const r = Math.round(ry / cell);
+        return { r, c };
+      }
+
+      function isValidMove(r, c) {
+        return r >= 0 && r < size && c >= 0 && c < size && board[r][c] === 0 && !finished && ((myColor && currentTurn === myColor) || myColor === null);
+      }
+
+      function placeMoveLocal(r, c, color) {
+        board[r][c] = color;
+        drawBoard();
+      }
+
+      function updateTurnText() {
+        const el = document.getElementById('turnInfo');
+        if (finished) return;
+        if (!myColor) {
+          el.textContent = '已開始遊戲，等待伺服器分配顏色與回合資訊...';
+          return;
+        }
+        el.textContent = (currentTurn === myColor) ? '你的回合' : '對手的回合';
+      }
+
+      function showResultText(text) {
+        const el = document.getElementById('result');
+        el.textContent = text;
+      }
+
+      canvas.addEventListener('click', function (e) {
+        const { r, c } = posToCell(e.clientX, e.clientY);
+        if (!isValidMove(r, c)) return;
+        // 樂觀更新介面
+        placeMoveLocal(r, c, myColor || 1);
+        // 若 gameId 存在，則發送至伺服器
+        if (gameId) {
+          fetch(origin + '/gomoku/' + encodeURIComponent(gameId) + '/move', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json', [csrfHeader]: csrfToken },
+            body: JSON.stringify({ x: c, y: r })
+          }).then(res => {
+            if (!res.ok) {
+              // 樂觀更新失敗，回滾操作：清除該格
+              board[r][c] = 0;
+              drawBoard();
+              return res.text().then(t => { console.error('move error', t); });
+            }
+            return res.json().then(j => {
+              // 伺服器可能回傳更新的棋盤/回合/勝利者資訊
+              if (j.board) board = j.board;
+              if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
+              if (j.finished) {
+                finished = true;
+                if (j.winner) showResultText((j.winner === (myColor === 1 ? 'black' : 'white')) ? '你贏了！' : '你輸了...');
+                setTimeout(() => { window.location.href = '/'; }, 5000);
+              }
+              drawBoard();
+              updateTurnText();
+            }).catch(err => console.error(err));
+          }).catch(err => { console.error(err); });
+        }
+      });
+
+      function checkWinAt(r, c) {
+        const dirs = [[1, 0], [0, 1], [1, 1], [1, -1]];
+        const color = board[r][c];
+        for (const d of dirs) {
+          let cnt = 1;
+          for (let k = 1; k < 5; k++) {
+            const nr = r + k * d[0], nc = c + k * d[1];
+            if (nr < 0 || nc < 0 || nr >= size || nc >= size) break;
+            if (board[nr][nc] === color) cnt++; else break;
+          }
+          for (let k = 1; k < 5; k++) {
+            const nr = r - k * d[0], nc = c - k * d[1];
+            if (nr < 0 || nc < 0 || nr >= size || nc >= size) break;
+            if (board[nr][nc] === color) cnt++; else break;
+          }
+          if (cnt >= 5) return color;
+        }
+        return 0;
+      }
+
+      function startGameLoop(gid) {
+        if (pollingGameTimer) clearInterval(pollingGameTimer);
+        gameId = gid;
+        // 初始獲取遊戲狀態
+        fetchGameState();
+        pollingGameTimer = setInterval(fetchGameState, 1000);
+      }
+
+      function fetchGameState() {
+        if (!gameId) return;
+        fetch(origin + '/gomoku/' + encodeURIComponent(gameId) + '?_=' + Date.now(), { cache: 'no-store', credentials: 'include' })
+          .then(r => {
+            if (!r.ok) return null;
+            return r.json();
+          }).then(j => {
+            if (!j) return;
+            if (j.board) board = j.board;
+            if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
+            if (j.myColor) myColor = (j.myColor === 'black') ? 1 : 2;
+            if (j.finished) {
+              finished = true;
+              if (j.winner) showResultText((j.winner === (myColor === 1 ? 'black' : 'white')) ? '你贏了！' : '你輸了...');
+              setTimeout(() => { window.location.href = '/'; }, 5000);
+            }
+            drawBoard();
+            updateTurnText();
+          }).catch(e => { console.error(e); });
+      }
+
+      // 輪詢配對狀態以偵測何時進入對弈中
+      let matchingTimer = setInterval(function () {
+        fetch(origin + '/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' })
           .then(r => r.json())
           .then(j => {
+            if (!j) return;
+            // 若在大廳則導回首頁
             if (j.status === 'lobby') {
+              clearInterval(matchingTimer);
+              if (pollingGameTimer) clearInterval(pollingGameTimer);
               window.location.href = '/';
             }
+            if (j.status === 'playing' && j.gameId) {
+              // 開始遊戲循環
+              startGameLoop(j.gameId);
+              // 若伺服器在配對狀態中提供了回合/我的顏色，則應用之
+              if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
+              if (j.myColor) myColor = (j.myColor === 'black') ? 1 : 2;
+              updateTurnText();
+            }
           }).catch(e => console.error(e));
-      }, pollInterval);
-      window.addEventListener('beforeunload', function () { clearInterval(timer); });
-    })();
+      }, 1000);
+
+      window.addEventListener('beforeunload', function () { if (matchingTimer) clearInterval(matchingTimer); if (pollingGameTimer) clearInterval(pollingGameTimer); });
+
+      // 初始繪製
+      drawBoard();
+      updateTurnText();
+
+    });
   </script>
 </body>
 

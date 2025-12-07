@@ -12,15 +12,21 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import team1.saikyoapps.model.MatchingQueue;
 import team1.saikyoapps.model.MatchingQueueMapper;
 import team1.saikyoapps.model.PlayerStatus;
+import team1.saikyoapps.model.GomokuGameMapper;
+import team1.saikyoapps.model.GomokuGame;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Controller
 public class MatchingController {
   @Autowired
   MatchingQueueMapper matchingQueueMapper;
+
+  @Autowired
+  GomokuGameMapper gomokuGameMapper;
 
   @GetMapping("/matching")
   public String matching(@RequestParam(name = "game", required = false) String game, Model model,
@@ -118,6 +124,38 @@ public class MatchingController {
     res.put("status", status);
     res.put("currentGame", currentGame);
     res.put("waitingCount", waitingCount);
+
+    // 若玩家已在 playing 並且是 gomoku，嘗試找出該玩家的 gomoku_game 並回傳 gameId, turn, myColor
+    if ("playing".equals(status) && "gomoku".equals(targetGame)) {
+      GomokuGame gg = gomokuGameMapper.findByPlayer(user);
+      if (gg == null) {
+        // 尚未建立 game session，嘗試建立（產生 UUID）
+        String newGameId = UUID.randomUUID().toString();
+        // 取得同一遊戲的正在 playing 的玩家（取前兩名）
+        List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("gomoku");
+        String playerBlack = null;
+        String playerWhite = null;
+        if (playingUsers.size() >= 1)
+          playerBlack = playingUsers.get(0);
+        if (playingUsers.size() >= 2)
+          playerWhite = playingUsers.get(1);
+        // 如無對手則留空
+        if (playerBlack == null)
+          playerBlack = user;
+        if (playerWhite == null)
+          playerWhite = "";
+        gomokuGameMapper.insert(newGameId, playerBlack, playerWhite, null, "black", "playing");
+        gg = gomokuGameMapper.findByGameId(newGameId);
+      }
+      res.put("gameId", gg.getGameId());
+      res.put("turn", gg.getTurn());
+      // myColor 以 playerBlack/playerWhite 判定
+      if (user.equals(gg.getPlayerBlack()))
+        res.put("myColor", "black");
+      else if (user.equals(gg.getPlayerWhite()))
+        res.put("myColor", "white");
+    }
+
     return res;
   }
 
@@ -274,6 +312,7 @@ public class MatchingController {
     model.addAttribute("loser", loser);
     return "match_result";
   }
+
   @GetMapping("/tictactoe")
   public String tictactoe(Model model, Authentication authentication) {
     if (authentication != null) {
