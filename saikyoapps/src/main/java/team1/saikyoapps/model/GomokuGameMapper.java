@@ -1,5 +1,6 @@
 package team1.saikyoapps.model;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -19,4 +20,7 @@ public interface GomokuGameMapper {
   // 新增：依玩家查詢該玩家所屬的遊戲 session (player_black 或 player_white)
   @Select("SELECT game_id AS gameId, player_black AS playerBlack, player_white AS playerWhite, board_state AS boardState, turn, status FROM gomoku_game WHERE player_black = #{player} OR player_white = #{player} LIMIT 1")
   GomokuGame findByPlayer(String player);
+
+  @Delete("DELETE FROM gomoku_game WHERE game_id = #{gameId}")
+  void deleteByGameId(String gameId);
 }

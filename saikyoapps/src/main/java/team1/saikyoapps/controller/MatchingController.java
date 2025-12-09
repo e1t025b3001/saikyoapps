@@ -14,19 +14,28 @@ import team1.saikyoapps.model.MatchingQueueMapper;
 import team1.saikyoapps.model.PlayerStatus;
 import team1.saikyoapps.model.GomokuGameMapper;
 import team1.saikyoapps.model.GomokuGame;
+import team1.saikyoapps.model.GomokuMoveMapper;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Controller
 public class MatchingController {
+  private static final Logger logger = LoggerFactory.getLogger(MatchingController.class);
+
   @Autowired
   MatchingQueueMapper matchingQueueMapper;
 
   @Autowired
   GomokuGameMapper gomokuGameMapper;
+
+  @Autowired
+  GomokuMoveMapper gomokuMoveMapper;
 
   @GetMapping("/matching")
   public String matching(@RequestParam(name = "game", required = false) String game, Model model,
@@ -188,6 +197,20 @@ public class MatchingController {
     matchingQueueMapper.deleteByUserAndGame(user, game);
     matchingQueueMapper.deleteByUserAndGame(winner, game);
 
+    // 刪除 gomoku_move 的紀錄
+    // gomoku の場合、該当する gameId を取得して moves を削除する
+    GomokuGame ggUser = gomokuGameMapper.findByPlayer(user);
+    GomokuGame ggWinner = gomokuGameMapper.findByPlayer(winner);
+    String gomokuGameId = null;
+    if (ggUser != null) {
+      gomokuGameId = ggUser.getGameId();
+    } else if (ggWinner != null) {
+      gomokuGameId = ggWinner.getGameId();
+    }
+    if (gomokuGameId != null) {
+      gomokuMoveMapper.deleteByGameId(gomokuGameId);
+    }
+
     // 更新 players_status
     matchingQueueMapper.updatePlayerStatus(user, "lobby", null);
     matchingQueueMapper.updatePlayerStatus(winner, "lobby", null);
@@ -220,6 +243,8 @@ public class MatchingController {
     if (authentication != null)
       model.addAttribute("username", authentication.getName());
     model.addAttribute("game", "gomoku");
+    // 新增日誌，紀錄進入 gomoku 頁面的資訊
+    logger.info("Rendering gomoku page for user={}", authentication != null ? authentication.getName() : "guest");
     return "gomoku";
   }
 
@@ -257,6 +282,45 @@ public class MatchingController {
       if (game != null) {
         matchingQueueMapper.deleteByUserAndGame(user, game);
       }
+
+      // 如果是 gomoku，嘗試清除該局的 moves 與 gomoku_game，並將對手也回到 lobby
+      if ("gomoku".equals(game)) {
+        try {
+          GomokuGame gg = gomokuGameMapper.findByPlayer(user);
+          if (gg != null) {
+            String gid = gg.getGameId();
+            // 刪除 moves
+            try {
+              gomokuMoveMapper.deleteByGameId(gid);
+            } catch (Exception ex) {
+              logger.warn("Failed to delete gomoku_move for {}: {}", gid, ex.getMessage());
+            }
+            // 刪除 gomoku_game
+            try {
+              gomokuGameMapper.deleteByGameId(gid);
+            } catch (Exception ex) {
+              logger.warn("Failed to delete gomoku_game {}: {}", gid, ex.getMessage());
+            }
+            // 若有對手，將對手狀態回 lobby 並刪除 matching_queue 的殘留
+            String opp = null;
+            if (user.equals(gg.getPlayerBlack()))
+              opp = gg.getPlayerWhite();
+            else if (user.equals(gg.getPlayerWhite()))
+              opp = gg.getPlayerBlack();
+            if (opp != null && !opp.isEmpty()) {
+              try {
+                matchingQueueMapper.deleteByUserAndGame(opp, "gomoku");
+                matchingQueueMapper.updatePlayerStatus(opp, "lobby", null);
+              } catch (Exception ex) {
+                logger.warn("Failed to cleanup opponent {} after leave: {}", opp, ex.getMessage());
+              }
+            }
+          }
+        } catch (Exception ex) {
+          logger.warn("Error while cleaning up gomoku game on leave for {}: {}", user, ex.getMessage());
+        }
+      }
+
       // 更新 players_status 為 lobby
       matchingQueueMapper.updatePlayerStatus(user, "lobby", null);
     }

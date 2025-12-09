@@ -1,5 +1,6 @@
 package team1.saikyoapps.model;
 
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
@@ -16,4 +17,7 @@ public interface GomokuMoveMapper {
 
   @Select("SELECT id, game_id AS gameId, player, x, y, move_no AS moveNo, created_at AS createdAt FROM gomoku_move WHERE game_id = #{gameId} ORDER BY move_no")
   List<GomokuMove> findByGameId(String gameId);
+
+  @Delete("DELETE FROM gomoku_move WHERE game_id = #{gameId}")
+  void deleteByGameId(String gameId);
 }
