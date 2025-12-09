@@ -40,9 +40,15 @@
             const waiting = json.waitingCount || 0;
             if (waitingCountEl) waitingCountEl.textContent = waiting;
 
+            // もし gameId が返ってきたら直接ゲーム画面へ遷移
+            if (json.gameId) {
+              window.location.href = '/' + selectedGame + '?matchId=' + encodeURIComponent(json.gameId);
+              return;
+            }
+
             // 只在玩家狀態變為 playing 且 currentGame 與目前選擇遊戲一致時視為配對成功
             if (status === 'playing' && currentGame === selectedGame) {
-              // 導向配對成功頁面，由後端與 match_success 處理後續
+              // 従来の動作：match_success へ遷移させる
               window.location.href = '/match_success?game=' + encodeURIComponent(selectedGame);
             }
           })

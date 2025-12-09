@@ -70,3 +70,26 @@ CREATE TABLE IF NOT EXISTS match_history (
     ended_at TIMESTAMP,
     extra CLOB
 );
+
+CREATE TABLE IF NOT EXISTS marubatsu_game (
+    id IDENTITY,
+    game_id VARCHAR(64) UNIQUE,
+    player_x VARCHAR(255),
+    player_o VARCHAR(255),
+    board_state CLOB,
+    turn VARCHAR(32),
+    status VARCHAR(32) DEFAULT 'playing',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS marubatsu_move (
+    id IDENTITY,
+    game_id VARCHAR(64),
+    player VARCHAR(255),
+    x INT,
+    y INT,
+    move_no INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    extra CLOB
+);

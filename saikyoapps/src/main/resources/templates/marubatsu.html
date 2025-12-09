@@ -4,10 +4,15 @@
 <head>
   <meta charset="UTF-8" />
   <title>マルバツゲーム</title>
+  <style>
+    #board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); gap: 5px; margin-bottom: 10px; }
+    .cell { width: 100px; height: 100px; font-size: 48px; display:flex; align-items:center; justify-content:center; cursor:pointer; background:#fff; border:2px solid #444; user-select:none }
+    .cell.disabled { cursor:default; background:#eee }
+  </style>
 </head>
 
 <body th:attr="data-game=${game}">
-  <h1>マルバツゲーム遊戲画面</h1>
+  <h1>マルバツゲーム</h1>
 
   <form th:action="@{/match/forfeit}" method="post">
     <input type="hidden" name="game" th:value="${game}" />
@@ -15,26 +20,31 @@
     <button type="submit">戻る（投降）</button>
   </form>
 
-  <a th:href="@{/}">直接返回選單（不會更新狀態）</a>
+  <div id="game">
+    <div id="status">現在の手番: <span id="currentPlayer">先手 (X)</span></div>
+    <div id="board">
+      <div class="cell" data-row="0" data-col="0"></div>
+      <div class="cell" data-row="0" data-col="1"></div>
+      <div class="cell" data-row="0" data-col="2"></div>
 
-  <script th:inline="javascript">
-    /*<![CDATA[*/
-    const game = /*[[${game}]]*/ 'marubatsu';
-    /*]]>*/
-    (function () {
-      const pollInterval = 2000;
-      let timer = setInterval(function () {
-        fetch('/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store' })
-          .then(r => r.json())
-          .then(j => {
-            if (j.status === 'lobby') {
-              window.location.href = '/';
-            }
-          }).catch(e => console.error(e));
-      }, pollInterval);
-      window.addEventListener('beforeunload', function () { clearInterval(timer); });
-    })();
-  </script>
+      <div class="cell" data-row="1" data-col="0"></div>
+      <div class="cell" data-row="1" data-col="1"></div>
+      <div class="cell" data-row="1" data-col="2"></div>
+
+      <div class="cell" data-row="2" data-col="0"></div>
+      <div class="cell" data-row="2" data-col="1"></div>
+      <div class="cell" data-row="2" data-col="2"></div>
+    </div>
+
+    <div id="result" style="margin-top:10px;font-weight:bold"></div>
+  </div>
+
+  <!-- CSRF hidden for JS -->
+  <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
+  <!-- matchId hidden for JS -->
+  <input type="hidden" id="matchId" name="matchId" th:value="${matchId}" />
+
+  <script src="/js/marubatsu.js"></script>
 </body>
 
 </html>
