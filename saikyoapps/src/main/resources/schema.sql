@@ -35,3 +35,38 @@ CREATE VIEW IF NOT EXISTS uno_matching_queue AS
 
 CREATE VIEW IF NOT EXISTS dairo_matching_queue AS
   SELECT * FROM matching_queue WHERE requested_game = 'dairo';
+
+-- 新增五目並べ相關資料表
+CREATE TABLE IF NOT EXISTS gomoku_game (
+    id IDENTITY,
+    game_id VARCHAR(64) UNIQUE,
+    player_black VARCHAR(255),
+    player_white VARCHAR(255),
+    board_state CLOB,
+    turn VARCHAR(255),
+    status VARCHAR(32) DEFAULT 'playing',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS gomoku_move (
+    id IDENTITY,
+    game_id VARCHAR(64),
+    player VARCHAR(255),
+    x INT,
+    y INT,
+    move_no INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    extra CLOB
+);
+
+CREATE TABLE IF NOT EXISTS match_history (
+    id IDENTITY,
+    game_name VARCHAR(64),
+    player1 VARCHAR(255),
+    player2 VARCHAR(255),
+    winner VARCHAR(255),
+    started_at TIMESTAMP,
+    ended_at TIMESTAMP,
+    extra CLOB
+);

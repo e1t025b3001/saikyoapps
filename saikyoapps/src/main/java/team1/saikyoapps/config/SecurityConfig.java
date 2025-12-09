@@ -57,7 +57,7 @@ public class SecurityConfig {
             .permitAll())
         .logout(logout -> logout.permitAll())
         .csrf(csrf -> csrf
-            .ignoringRequestMatchers("/h2-console/*"))
+            .ignoringRequestMatchers("/h2-console/*", "/gomoku/**"))
         .headers(headers -> headers
             .frameOptions(
                 frameOptions -> frameOptions
