@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/gomoku")
@@ -32,6 +33,10 @@ public class GomokuController {
 
   @Autowired
   MatchingQueueMapper matchingQueueMapper;
+
+  // 直近で終了した対局の勝敗情報を一時保持し、ポーリング中のクライアントに返すためのキャッシュ
+  // 注: DB運用方針Aによりゲーム/手は削除しないため、本キャッシュは結果表示の補助用途のみ
+  private final Map<String, Map<String, Object>> finishedWinners = new ConcurrentHashMap<>();
 
   // 観戦一覧（対局中のみ）
   @GetMapping("/spectate/list")
@@ -60,8 +65,27 @@ public class GomokuController {
   public ResponseEntity<Map<String, Object>> getGame(@PathVariable String gameId, Authentication authentication) {
     try {
       GomokuGame g = gameMapper.findByGameId(gameId);
-      if (g == null)
+      if (g == null) {
+        // DB運用方針Aでは原則ゲームは残るが、念のため直近終了キャッシュがあれば返す
+        if (finishedWinners.containsKey(gameId)) {
+          Map<String, Object> info = finishedWinners.get(gameId);
+          Map<String, Object> res = new HashMap<>();
+          res.put("board", null);
+          res.put("turn", null);
+          res.put("finished", true);
+          res.put("winner", info.get("winner"));
+          res.put("loser", info.get("loser"));
+          if (info.containsKey("winningLine")) {
+            res.put("winningLine", info.get("winningLine"));
+          }
+          res.put("playerBlack", null);
+          res.put("playerWhite", null);
+          res.put("mode", "spectator");
+          return ResponseEntity.ok(res);
+        }
         return ResponseEntity.notFound().build();
+      }
+
       Map<String, Object> res = new HashMap<>();
 
       // boardState 儲存為 JSON 字串或 null
@@ -77,9 +101,22 @@ public class GomokuController {
       }
 
       res.put("turn", g.getTurn());
-      res.put("finished", "finished".equals(g.getStatus()));
+      boolean finished = "finished".equals(g.getStatus());
+      res.put("finished", finished);
+
+      // 観戦UIで表示に使うため返す
       res.put("playerBlack", g.getPlayerBlack());
       res.put("playerWhite", g.getPlayerWhite());
+
+      // ゲーム終了時にキャッシュがあれば勝敗情報も返す（結果表示の補助）
+      if (finished && finishedWinners.containsKey(gameId)) {
+        Map<String, Object> info = finishedWinners.get(gameId);
+        res.put("winner", info.get("winner"));
+        res.put("loser", info.get("loser"));
+        if (info.containsKey("winningLine")) {
+          res.put("winningLine", info.get("winningLine"));
+        }
+      }
 
       // 若有登入使用者，回傳 myColor / mode
       String mode = "spectator";
@@ -168,6 +205,7 @@ public class GomokuController {
 
       // 檢查勝利
       boolean win = false;
+      List<int[]> winningLine = null;
       int dirs[][] = { { 1, 0 }, { 0, 1 }, { 1, 1 }, { 1, -1 } };
       outer: for (int[] d : dirs) {
         int cnt = 1;
@@ -193,6 +231,44 @@ public class GomokuController {
         }
         if (cnt >= 5) {
           win = true;
+
+          // winningLine（main側機能）の情報も作る
+          int sx = x;
+          int sy = y;
+          while (true) {
+            int nx = sx - d[0];
+            int ny = sy - d[1];
+            if (nx < 0 || ny < 0 || nx >= 15 || ny >= 15)
+              break;
+            if (board[ny][nx] == colorVal) {
+              sx = nx;
+              sy = ny;
+            } else
+              break;
+          }
+          int ex = x;
+          int ey = y;
+          while (true) {
+            int nx = ex + d[0];
+            int ny = ey + d[1];
+            if (nx < 0 || ny < 0 || nx >= 15 || ny >= 15)
+              break;
+            if (board[ny][nx] == colorVal) {
+              ex = nx;
+              ey = ny;
+            } else
+              break;
+          }
+          winningLine = new ArrayList<>();
+          int steps = Math.max(Math.abs(ex - sx), Math.abs(ey - sy));
+          int dx = (steps == 0) ? 0 : (ex - sx) / steps;
+          int dy = (steps == 0) ? 0 : (ey - sy) / steps;
+          for (int i = 0; i <= steps; i++) {
+            int cx = sx + i * dx;
+            int cy = sy + i * dy;
+            winningLine.add(new int[] { cx, cy });
+          }
+
           break outer;
         }
       }
@@ -213,8 +289,13 @@ public class GomokuController {
           g.setBoardState(newBoardJson);
           g.setTurn(null);
 
+          String winnerName = "black".equals(color) ? g.getPlayerBlack() : g.getPlayerWhite();
+          String loserName = (winnerName != null && winnerName.equals(g.getPlayerBlack())) ? g.getPlayerWhite()
+              : g.getPlayerBlack();
+
           try {
-            historyMapper.insert("gomoku", g.getPlayerBlack(), g.getPlayerWhite(), color, null,
+            // match_history には勝者ユーザ名を保存する
+            historyMapper.insert("gomoku", g.getPlayerBlack(), g.getPlayerWhite(), winnerName, null,
                 new Timestamp(System.currentTimeMillis()), null);
           } catch (Exception ex) {
             logger.warn("Failed to insert match_history for win {}: {}", gameId, ex.getMessage());
@@ -240,11 +321,26 @@ public class GomokuController {
             logger.warn("Failed to cleanup player status after game end: {}", ex.getMessage());
           }
 
+          // 結果表示の補助としてキャッシュにも保存
+          try {
+            Map<String, Object> infoMap = new HashMap<>();
+            infoMap.put("winner", winnerName == null ? "" : winnerName);
+            infoMap.put("loser", loserName == null ? "" : loserName);
+            infoMap.put("winnerColor", color);
+            infoMap.put("winningLine", winningLine);
+            finishedWinners.put(gameId, infoMap);
+          } catch (Exception ex) {
+            logger.warn("Failed to cache finished winner info for {}: {}", gameId, ex.getMessage());
+          }
+
           Map<String, Object> resWin = new HashMap<>();
           resWin.put("board", board);
           resWin.put("turn", null);
           resWin.put("finished", true);
-          resWin.put("winner", color);
+          resWin.put("winner", winnerName);
+          resWin.put("winnerColor", color);
+          resWin.put("loser", loserName);
+          resWin.put("winningLine", winningLine);
           return ResponseEntity.ok(resWin);
         }
       } catch (Exception e) {
@@ -256,8 +352,10 @@ public class GomokuController {
       res.put("board", board);
       res.put("turn", g.getTurn());
       res.put("finished", win);
-      if (win)
-        res.put("winner", color);
+      if (win) {
+        // 基本は勝利分岐でreturn済みだが、念のため
+        res.put("winnerColor", color);
+      }
       return ResponseEntity.ok(res);
     } catch (Exception ex) {
       logger.error("Error in postMove for {}", gameId, ex);
@@ -265,7 +363,7 @@ public class GomokuController {
     }
   }
 
-  // 玩家認輸 API：紀錄 match_history、刪除 moves、更新狀態
+  // 玩家認輸 API：紀錄 match_history、更新狀態
   @PostMapping("/{gameId}/forfeit")
   public ResponseEntity<Map<String, Object>> forfeitGame(@PathVariable String gameId, Authentication authentication) {
     try {
@@ -311,6 +409,26 @@ public class GomokuController {
         }
       } catch (Exception ex) {
         logger.warn("Failed to cleanup player status after forfeit: {}", ex.getMessage());
+      }
+
+      // 結果表示の補助としてキャッシュ
+      try {
+        Map<String, Object> infoMap = new HashMap<>();
+        infoMap.put("winner", winner == null ? "" : winner);
+        infoMap.put("loser", loser == null ? "" : loser);
+        String winnerColor = null;
+        if (winner != null) {
+          if (winner.equals(g.getPlayerBlack())) {
+            winnerColor = "black";
+          } else if (winner.equals(g.getPlayerWhite())) {
+            winnerColor = "white";
+          }
+        }
+        infoMap.put("winnerColor", winnerColor);
+        infoMap.put("winningLine", null);
+        finishedWinners.put(gameId, infoMap);
+      } catch (Exception ex) {
+        logger.warn("Failed to cache finished forfeit info for {}: {}", gameId, ex.getMessage());
       }
 
       Map<String, Object> res = new HashMap<>();
