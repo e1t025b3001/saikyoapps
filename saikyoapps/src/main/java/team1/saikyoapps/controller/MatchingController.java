@@ -17,6 +17,9 @@ import team1.saikyoapps.model.GomokuGame;
 import team1.saikyoapps.model.GomokuMoveMapper;
 import team1.saikyoapps.model.MarubatsuGameMapper;
 import team1.saikyoapps.model.MarubatsuGame;
+import team1.saikyoapps.model.MarubatsuMoveMapper;
+import team1.saikyoapps.model.MatchHistoryMapper;
+import java.sql.Timestamp;
 
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +44,12 @@ public class MatchingController {
 
   @Autowired
   MarubatsuGameMapper marubatsuGameMapper;
+
+  @Autowired
+  MarubatsuMoveMapper marubatsuMoveMapper;
+
+  @Autowired
+  MatchHistoryMapper historyMapper;
 
   @GetMapping("/matching")
   public String matching(@RequestParam(name = "game", required = false) String game, Model model,
@@ -69,15 +78,20 @@ public class MatchingController {
           List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("marubatsu");
           String playerX = null;
           String playerO = null;
-          if (playingUsers.size() >= 1) playerX = playingUsers.get(0);
-          if (playingUsers.size() >= 2) playerO = playingUsers.get(1);
-          if (playerX == null) playerX = authentication.getName();
-          if (playerO == null) playerO = "";
+          if (playingUsers.size() >= 1)
+            playerX = playingUsers.get(0);
+          if (playingUsers.size() >= 2)
+            playerO = playingUsers.get(1);
+          if (playerX == null)
+            playerX = authentication.getName();
+          if (playerO == null)
+            playerO = "";
           marubatsuGameMapper.insert(newGameId, playerX, playerO, null, "X", "playing");
           logger.info("Created marubatsu game {} players: {}/{}", newGameId, playerX, playerO);
           mg = marubatsuGameMapper.findByGameId(newGameId);
         }
-        if (mg != null) model.addAttribute("matchId", mg.getGameId());
+        if (mg != null)
+          model.addAttribute("matchId", mg.getGameId());
       }
 
       return "match_success";
@@ -132,11 +146,16 @@ public class MatchingController {
           List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("marubatsu");
           String playerX = null;
           String playerO = null;
-          if (playingUsers.size() >= 1) playerX = playingUsers.get(0);
-          if (playingUsers.size() >= 2) playerO = playingUsers.get(1);
-          if (playerX == null && authentication != null) playerX = authentication.getName();
-          if (playerX == null) playerX = "";
-          if (playerO == null) playerO = "";
+          if (playingUsers.size() >= 1)
+            playerX = playingUsers.get(0);
+          if (playingUsers.size() >= 2)
+            playerO = playingUsers.get(1);
+          if (playerX == null && authentication != null)
+            playerX = authentication.getName();
+          if (playerX == null)
+            playerX = "";
+          if (playerO == null)
+            playerO = "";
           try {
             marubatsuGameMapper.insert(newGameId, playerX, playerO, null, "X", "playing");
             logger.info("Created marubatsu game (matchSuccess) {} players: {}/{}", newGameId, playerX, playerO);
@@ -219,10 +238,14 @@ public class MatchingController {
         List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("marubatsu");
         String playerX = null;
         String playerO = null;
-        if (playingUsers.size() >= 1) playerX = playingUsers.get(0);
-        if (playingUsers.size() >= 2) playerO = playingUsers.get(1);
-        if (playerX == null) playerX = user;
-        if (playerO == null) playerO = "";
+        if (playingUsers.size() >= 1)
+          playerX = playingUsers.get(0);
+        if (playingUsers.size() >= 2)
+          playerO = playingUsers.get(1);
+        if (playerX == null)
+          playerX = user;
+        if (playerO == null)
+          playerO = "";
         try {
           marubatsuGameMapper.insert(newGameId, playerX, playerO, null, "X", "playing");
         } catch (Exception ex) {
@@ -233,8 +256,10 @@ public class MatchingController {
       if (mg != null) {
         res.put("gameId", mg.getGameId());
         res.put("turn", mg.getTurn());
-        if (user.equals(mg.getPlayerX())) res.put("mySymbol", "X");
-        else if (user.equals(mg.getPlayerO())) res.put("mySymbol", "O");
+        if (user.equals(mg.getPlayerX()))
+          res.put("mySymbol", "X");
+        else if (user.equals(mg.getPlayerO()))
+          res.put("mySymbol", "O");
       }
     }
 
@@ -270,6 +295,41 @@ public class MatchingController {
     matchingQueueMapper.deleteByUserAndGame(user, game);
     matchingQueueMapper.deleteByUserAndGame(winner, game);
 
+    // 若是 marubatsu，刪除即時對戰紀錄、寫入 history 並刪除或標記 game
+    if ("marubatsu".equals(game)) {
+      try {
+        MarubatsuGame mgUser = marubatsuGameMapper.findByPlayer(user);
+        MarubatsuGame mgWinner = marubatsuGameMapper.findByPlayer(winner);
+        MarubatsuGame mg = (mgUser != null) ? mgUser : mgWinner;
+        String mid = null;
+        if (mg != null)
+          mid = mg.getGameId();
+        // 刪除 moves
+        if (mid != null) {
+          try {
+            marubatsuMoveMapper.deleteByGameId(mid);
+          } catch (Exception ex) {
+            logger.warn("Failed to delete marubatsu_move for {}: {}", mid, ex.getMessage());
+          }
+          try {
+            marubatsuGameMapper.deleteByGameId(mid);
+          } catch (Exception ex) {
+            logger.warn("Failed to delete marubatsu_game {}: {}", mid, ex.getMessage());
+          }
+        }
+        // 寫入 match_history
+        try {
+          String px = (mg != null) ? mg.getPlayerX() : null;
+          String po = (mg != null) ? mg.getPlayerO() : null;
+          historyMapper.insert("marubatsu", px, po, winner, null, new Timestamp(System.currentTimeMillis()), "forfeit");
+        } catch (Exception ex) {
+          logger.warn("Failed to insert match_history for marubatsu forfeit: {}", ex.getMessage());
+        }
+      } catch (Exception ex) {
+        logger.warn("Error cleaning up marubatsu game on forfeit: {}", ex.getMessage());
+      }
+    }
+
     // 刪除 gomoku_move 的紀錄
     // gomoku の場合、該当する gameId を取得して moves を削除する
     GomokuGame ggUser = gomokuGameMapper.findByPlayer(user);
@@ -296,7 +356,9 @@ public class MatchingController {
 
   // 各遊戲頁面的 GET endpoint，避免 Whitelabel Error Page
   @GetMapping("/marubatsu")
-  public String marubatsu(@org.springframework.web.bind.annotation.RequestParam(name = "matchId", required = false) String matchId, Model model, Authentication authentication) {
+  public String marubatsu(
+      @org.springframework.web.bind.annotation.RequestParam(name = "matchId", required = false) String matchId,
+      Model model, Authentication authentication) {
     if (authentication != null)
       model.addAttribute("username", authentication.getName());
     model.addAttribute("game", "marubatsu");
@@ -444,15 +506,20 @@ public class MatchingController {
         List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("marubatsu");
         String playerX = null;
         String playerO = null;
-        if (playingUsers.size() >= 1) playerX = playingUsers.get(0);
-        if (playingUsers.size() >= 2) playerO = playingUsers.get(1);
-        if (playerX == null) playerX = authentication.getName();
-        if (playerO == null) playerO = "";
+        if (playingUsers.size() >= 1)
+          playerX = playingUsers.get(0);
+        if (playingUsers.size() >= 2)
+          playerO = playingUsers.get(1);
+        if (playerX == null)
+          playerX = authentication.getName();
+        if (playerO == null)
+          playerO = "";
         marubatsuGameMapper.insert(newGameId, playerX, playerO, null, "X", "playing");
         logger.info("Created marubatsu game (matchSuccess) {} players: {}/{}", newGameId, playerX, playerO);
         mg = marubatsuGameMapper.findByGameId(newGameId);
       }
-      if (mg != null) model.addAttribute("matchId", mg.getGameId());
+      if (mg != null)
+        model.addAttribute("matchId", mg.getGameId());
     }
 
     model.addAttribute("game", game != null ? game : "marubatsu");
