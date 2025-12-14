@@ -69,15 +69,20 @@ public class MatchingController {
           List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("marubatsu");
           String playerX = null;
           String playerO = null;
-          if (playingUsers.size() >= 1) playerX = playingUsers.get(0);
-          if (playingUsers.size() >= 2) playerO = playingUsers.get(1);
-          if (playerX == null) playerX = authentication.getName();
-          if (playerO == null) playerO = "";
+          if (playingUsers.size() >= 1)
+            playerX = playingUsers.get(0);
+          if (playingUsers.size() >= 2)
+            playerO = playingUsers.get(1);
+          if (playerX == null)
+            playerX = authentication.getName();
+          if (playerO == null)
+            playerO = "";
           marubatsuGameMapper.insert(newGameId, playerX, playerO, null, "X", "playing");
           logger.info("Created marubatsu game {} players: {}/{}", newGameId, playerX, playerO);
           mg = marubatsuGameMapper.findByGameId(newGameId);
         }
-        if (mg != null) model.addAttribute("matchId", mg.getGameId());
+        if (mg != null)
+          model.addAttribute("matchId", mg.getGameId());
       }
 
       return "match_success";
@@ -132,11 +137,16 @@ public class MatchingController {
           List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("marubatsu");
           String playerX = null;
           String playerO = null;
-          if (playingUsers.size() >= 1) playerX = playingUsers.get(0);
-          if (playingUsers.size() >= 2) playerO = playingUsers.get(1);
-          if (playerX == null && authentication != null) playerX = authentication.getName();
-          if (playerX == null) playerX = "";
-          if (playerO == null) playerO = "";
+          if (playingUsers.size() >= 1)
+            playerX = playingUsers.get(0);
+          if (playingUsers.size() >= 2)
+            playerO = playingUsers.get(1);
+          if (playerX == null && authentication != null)
+            playerX = authentication.getName();
+          if (playerX == null)
+            playerX = "";
+          if (playerO == null)
+            playerO = "";
           try {
             marubatsuGameMapper.insert(newGameId, playerX, playerO, null, "X", "playing");
             logger.info("Created marubatsu game (matchSuccess) {} players: {}/{}", newGameId, playerX, playerO);
@@ -219,10 +229,14 @@ public class MatchingController {
         List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("marubatsu");
         String playerX = null;
         String playerO = null;
-        if (playingUsers.size() >= 1) playerX = playingUsers.get(0);
-        if (playingUsers.size() >= 2) playerO = playingUsers.get(1);
-        if (playerX == null) playerX = user;
-        if (playerO == null) playerO = "";
+        if (playingUsers.size() >= 1)
+          playerX = playingUsers.get(0);
+        if (playingUsers.size() >= 2)
+          playerO = playingUsers.get(1);
+        if (playerX == null)
+          playerX = user;
+        if (playerO == null)
+          playerO = "";
         try {
           marubatsuGameMapper.insert(newGameId, playerX, playerO, null, "X", "playing");
         } catch (Exception ex) {
@@ -233,8 +247,10 @@ public class MatchingController {
       if (mg != null) {
         res.put("gameId", mg.getGameId());
         res.put("turn", mg.getTurn());
-        if (user.equals(mg.getPlayerX())) res.put("mySymbol", "X");
-        else if (user.equals(mg.getPlayerO())) res.put("mySymbol", "O");
+        if (user.equals(mg.getPlayerX()))
+          res.put("mySymbol", "X");
+        else if (user.equals(mg.getPlayerO()))
+          res.put("mySymbol", "O");
       }
     }
 
@@ -296,7 +312,9 @@ public class MatchingController {
 
   // 各遊戲頁面的 GET endpoint，避免 Whitelabel Error Page
   @GetMapping("/marubatsu")
-  public String marubatsu(@org.springframework.web.bind.annotation.RequestParam(name = "matchId", required = false) String matchId, Model model, Authentication authentication) {
+  public String marubatsu(
+      @org.springframework.web.bind.annotation.RequestParam(name = "matchId", required = false) String matchId,
+      Model model, Authentication authentication) {
     if (authentication != null)
       model.addAttribute("username", authentication.getName());
     model.addAttribute("game", "marubatsu");
@@ -444,15 +462,20 @@ public class MatchingController {
         List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("marubatsu");
         String playerX = null;
         String playerO = null;
-        if (playingUsers.size() >= 1) playerX = playingUsers.get(0);
-        if (playingUsers.size() >= 2) playerO = playingUsers.get(1);
-        if (playerX == null) playerX = authentication.getName();
-        if (playerO == null) playerO = "";
+        if (playingUsers.size() >= 1)
+          playerX = playingUsers.get(0);
+        if (playingUsers.size() >= 2)
+          playerO = playingUsers.get(1);
+        if (playerX == null)
+          playerX = authentication.getName();
+        if (playerO == null)
+          playerO = "";
         marubatsuGameMapper.insert(newGameId, playerX, playerO, null, "X", "playing");
         logger.info("Created marubatsu game (matchSuccess) {} players: {}/{}", newGameId, playerX, playerO);
         mg = marubatsuGameMapper.findByGameId(newGameId);
       }
-      if (mg != null) model.addAttribute("matchId", mg.getGameId());
+      if (mg != null)
+        model.addAttribute("matchId", mg.getGameId());
     }
 
     model.addAttribute("game", game != null ? game : "marubatsu");
@@ -480,5 +503,14 @@ public class MatchingController {
       model.addAttribute("username", "guest");
     }
     return "tictactoe";
+  }
+
+  @GetMapping("/gomoku/spectate")
+  public String gomokuSpectate(org.springframework.ui.Model model,
+      org.springframework.security.core.Authentication authentication) {
+    if (authentication != null)
+      model.addAttribute("username", authentication.getName());
+    model.addAttribute("game", "gomoku");
+    return "gomoku_spectate";
   }
 }

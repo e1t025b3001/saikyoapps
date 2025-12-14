@@ -6,6 +6,8 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.List;
+
 @Mapper
 public interface GomokuGameMapper {
   @Insert("INSERT INTO gomoku_game (game_id, player_black, player_white, board_state, turn, status) VALUES (#{gameId}, #{playerBlack}, #{playerWhite}, #{boardState}, #{turn}, #{status})")
@@ -23,4 +25,8 @@ public interface GomokuGameMapper {
 
   @Delete("DELETE FROM gomoku_game WHERE game_id = #{gameId}")
   void deleteByGameId(String gameId);
+
+  // 新增：查詢對局中(status='playing')的遊戲
+  @Select("SELECT game_id AS gameId, player_black AS playerBlack, player_white AS playerWhite, board_state AS boardState, turn, status FROM gomoku_game WHERE status = 'playing' ORDER BY updated_at DESC")
+  List<GomokuGame> findPlayingGames();
 }

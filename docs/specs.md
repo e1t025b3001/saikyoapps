@@ -2,10 +2,49 @@
 
 ---
 
+## 追加仕様（日本語）: 五目並べ 観戦機能
+
+### 概要
+- 五目並べ（Gomoku）について、対局中のゲーム（status = `playing`）を第三者が観戦できる機能を追加する。
+- 通信方式は **ポーリング** を継続する。
+
+### 画面
+- 観戦一覧: `GET /gomoku/spectate`（テンプレート: `templates/gomoku_spectate.html`）
+  - 対局中ゲームの一覧を表示し、選択すると観戦画面へ遷移する。
+- 観戦画面: 既存 `GET /gomoku?matchId={GAME_ID}&mode=spectate` を利用（テンプレート: `templates/gomoku.html` を流用）
+  - 観戦者は落子・投降ができない（UI上も投降ボタンは非表示）。
+  - 盤面と対局情報はサーバAPIをポーリングして更新する。
+
+### API
+- `GET /gomoku/spectate/list`
+  - 認証: 必須（ログインユーザのみ）
+  - 内容: 対局中（status='playing'）のゲーム一覧を返す
+  - 例: `[{ gameId, playerBlack, playerWhite }]`
+
+- `GET /gomoku/{gameId}`
+  - 既存の状態取得APIを観戦でも利用
+  - 追加レスポンス項目:
+    - `playerBlack`, `playerWhite`
+    - `mode`: `player` または `spectator`
+
+- `POST /gomoku/{gameId}/move`
+  - 観戦者（playerBlack/playerWhite 以外）からの操作は 403 で拒否
+
+### DB運用方針（重要）
+- 対局終了（勝利/投了）時は **盤面（board_state）と手（gomoku_move）を削除しない**。
+- ゲーム状態は `status = finished` に変更し、参照可能にする。
+  - 観戦中に対局が終了しても、最終盤面と結果を表示できる。
+
+### ポーリング
+- `templates/gomoku.html` は既存通り `GET /gomoku/{gameId}` を定期ポーリングして盤面を更新する。
+- 観戦時は URL の `matchId` により gameId を直接指定し、matching/status を経由せずポーリングを開始する。
+
+---
+
 ## 中文說明
 
 ### 專案概述
-本專案為多遊戲平臺（包含五目並べ Gomoku、三目並べ TicTacToe / まるばつ、以及其他遊戲頁面），採用 Java Spring Boot + Thymeleaf 前後端混合實作，資料存放於內建 H2（開發環境）。系統以「配對（matching）→ 建立對戰 session → 即時對戰（polling）」的流程為基礎，短期使用 polling，同步資料至資料庫的即時表與對戰歷史。
+本專案為多遊戲平台（包含五目並べ Gomoku、三目並べ TicTacToe / まるばつ、以及其他遊戲頁面），採用 Java Spring Boot + Thymeleaf 前後端混合實作，資料存放於內建 H2（開發環境）。系統以「配對（matching）→ 建立對戰 session → 即時對戰（polling）」的流程為基礎，短期使用 polling，同步資料至資料庫的即時表與對戰歷史。
 
 ### 功能要點
 - 配對機制：`/matching` 與 `/matching/status`，使用 `matching_queue` 與 `players_status` 管理等待與狀態。

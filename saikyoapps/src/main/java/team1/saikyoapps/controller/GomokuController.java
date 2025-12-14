@@ -33,6 +33,28 @@ public class GomokuController {
   @Autowired
   MatchingQueueMapper matchingQueueMapper;
 
+  // 観戦一覧（対局中のみ）
+  @GetMapping("/spectate/list")
+  public ResponseEntity<List<Map<String, Object>>> listSpectateGames(Authentication authentication) {
+    try {
+      if (authentication == null) {
+        return ResponseEntity.status(401).build();
+      }
+      List<GomokuGame> games = gameMapper.findPlayingGames();
+      List<Map<String, Object>> res = new ArrayList<>();
+      for (GomokuGame g : games) {
+        res.add(Map.of(
+            "gameId", g.getGameId(),
+            "playerBlack", g.getPlayerBlack(),
+            "playerWhite", g.getPlayerWhite()));
+      }
+      return ResponseEntity.ok(res);
+    } catch (Exception ex) {
+      logger.error("Error in listSpectateGames", ex);
+      return ResponseEntity.status(500).build();
+    }
+  }
+
   // 取得遊戲狀態
   @GetMapping("/{gameId}")
   public ResponseEntity<Map<String, Object>> getGame(@PathVariable String gameId, Authentication authentication) {
@@ -41,6 +63,7 @@ public class GomokuController {
       if (g == null)
         return ResponseEntity.notFound().build();
       Map<String, Object> res = new HashMap<>();
+
       // boardState 儲存為 JSON 字串或 null
       if (g.getBoardState() != null && !g.getBoardState().isEmpty()) {
         try {
@@ -52,16 +75,26 @@ public class GomokuController {
           res.put("board", null);
         }
       }
+
       res.put("turn", g.getTurn());
       res.put("finished", "finished".equals(g.getStatus()));
-      // 若有登入使用者，回傳 myColor
+      res.put("playerBlack", g.getPlayerBlack());
+      res.put("playerWhite", g.getPlayerWhite());
+
+      // 若有登入使用者，回傳 myColor / mode
+      String mode = "spectator";
       if (authentication != null) {
         String user = authentication.getName();
-        if (user.equals(g.getPlayerBlack()))
+        if (user.equals(g.getPlayerBlack())) {
           res.put("myColor", "black");
-        else if (user.equals(g.getPlayerWhite()))
+          mode = "player";
+        } else if (user.equals(g.getPlayerWhite())) {
           res.put("myColor", "white");
+          mode = "player";
+        }
       }
+      res.put("mode", mode);
+
       return ResponseEntity.ok(res);
     } catch (Exception ex) {
       logger.error("Error in getGame for {}", gameId, ex);
@@ -101,22 +134,23 @@ public class GomokuController {
       String playerName = "unknown";
       if (authentication != null)
         playerName = authentication.getName();
-      String color = "black"; // fallback
+
+      String color = null;
       if (playerName.equals(g.getPlayerWhite()))
         color = "white";
       else if (playerName.equals(g.getPlayerBlack()))
         color = "black";
 
+      // 観戦者（プレイヤー以外）の操作は禁止
+      if (color == null) {
+        return ResponseEntity.status(403).body(Map.of("error", "player not in game"));
+      }
+
       int colorVal = "black".equals(color) ? 1 : 2;
 
       // 簡易ルール：如果目前回合未設定，接受第一個動作玩家的顏色
       if (g.getTurn() == null || g.getTurn().isEmpty()) {
-        if ("unknown".equals(playerName) || playerName.equals(g.getPlayerBlack())
-            || playerName.equals(g.getPlayerWhite())) {
-          g.setTurn(color);
-        } else {
-          return ResponseEntity.status(403).body(Map.of("error", "player not in game"));
-        }
+        g.setTurn(color);
       }
 
       // 驗證是否是該玩家回合
@@ -168,44 +202,30 @@ public class GomokuController {
         com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
         String newBoardJson = om.writeValueAsString(board);
         String nextTurn = "black".equals(g.getTurn()) ? "white" : "black";
-        // 非勝利時是通常どおり保存
+
         if (!win) {
           g.setBoardState(newBoardJson);
           g.setTurn(nextTurn);
-          try {
-            gameMapper.update(g.getGameId(), newBoardJson, g.getTurn(), g.getStatus());
-          } catch (Exception ex) {
-            logger.warn("Failed to update game {} after move: {}", gameId, ex.getMessage());
-          }
+          gameMapper.update(g.getGameId(), newBoardJson, g.getTurn(), g.getStatus());
         } else {
-          // 勝利時：記錄を残し、盤面と moves を削除、プレイヤー状態をロビーに戻し、gomoku_game を削除
+          // DB運用方針A: 盤面と moves を保持し、status=finished にする
           g.setStatus("finished");
+          g.setBoardState(newBoardJson);
+          g.setTurn(null);
+
           try {
             historyMapper.insert("gomoku", g.getPlayerBlack(), g.getPlayerWhite(), color, null,
                 new Timestamp(System.currentTimeMillis()), null);
           } catch (Exception ex) {
             logger.warn("Failed to insert match_history for win {}: {}", gameId, ex.getMessage());
           }
+
           try {
-            moveMapper.deleteByGameId(gameId);
+            gameMapper.update(g.getGameId(), newBoardJson, null, g.getStatus());
           } catch (Exception ex) {
-            logger.warn("Failed to delete moves for game {}: {}", gameId, ex.getMessage());
+            logger.warn("Failed to update game {} to finished: {}", gameId, ex.getMessage());
           }
-          try {
-            // 嘗試刪除整個遊戲紀錄
-            gameMapper.deleteByGameId(gameId);
-          } catch (Exception ex) {
-            logger.warn("Failed to delete gomoku_game {}: {}", gameId, ex.getMessage());
-            // fallback: 清空盤面並標記 finished
-            try {
-              g.setBoardState(null);
-              g.setTurn(null);
-              g.setStatus("finished");
-              gameMapper.update(g.getGameId(), null, null, g.getStatus());
-            } catch (Exception ex2) {
-              logger.warn("Fallback update failed for game {}: {}", gameId, ex2.getMessage());
-            }
-          }
+
           // 更新 players_status 回 lobby
           try {
             if (g.getPlayerBlack() != null && !g.getPlayerBlack().isEmpty()) {
@@ -219,9 +239,9 @@ public class GomokuController {
           } catch (Exception ex) {
             logger.warn("Failed to cleanup player status after game end: {}", ex.getMessage());
           }
-          // 回傳勝利結果（不需再 update gomoku_game）
+
           Map<String, Object> resWin = new HashMap<>();
-          resWin.put("board", null);
+          resWin.put("board", board);
           resWin.put("turn", null);
           resWin.put("finished", true);
           resWin.put("winner", color);
@@ -269,20 +289,12 @@ public class GomokuController {
         logger.warn("Failed to insert match_history for forfeit {}", ex.getMessage());
       }
 
-      // 刪除 moves
-      try {
-        moveMapper.deleteByGameId(gameId);
-      } catch (Exception ex) {
-        logger.warn("Failed to delete moves for forfeit {}: {}", gameId, ex.getMessage());
-      }
-
-      // 更新 game 狀態為 finished
+      // DB運用方針A: moves/盤面は削除せず、status=finished にする
       try {
         g.setStatus("finished");
-        // 清空盤面與回合，確保該局資料不會留存
-        g.setBoardState(null);
+        // 投了時は手番を消す（盤面は保持）
         g.setTurn(null);
-        gameMapper.update(g.getGameId(), null, null, g.getStatus());
+        gameMapper.update(g.getGameId(), g.getBoardState(), null, g.getStatus());
       } catch (Exception ex) {
         logger.warn("Failed to update game status for forfeit {}: {}", gameId, ex.getMessage());
       }
