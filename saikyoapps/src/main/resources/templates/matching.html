@@ -37,7 +37,7 @@
       let pollTimer = null;
 
       function checkStatus() {
-        fetch('/matching/status?game=' + encodeURIComponent(selectedGame), { method: 'GET', cache: 'no-store' })
+        fetch('/matching/status?game=' + encodeURIComponent(selectedGame), { method: 'GET', cache: 'no-store', credentials: 'include' })
           .then(res => res.json())
           .then(json => {
             const status = json.status;

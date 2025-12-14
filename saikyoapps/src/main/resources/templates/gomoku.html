@@ -186,10 +186,35 @@
         document.getElementById('result').textContent = t;
       }
 
-      function simpleFetchJson(url, opts) {
+      // 結果ダイアログ（共通）
+      function showResultDialogText(text, backToSpectate) {
+        finished = true;
+        if (matchTimer) { clearInterval(matchTimer); matchTimer = null; }
+        if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
+        const dlgText = document.getElementById('resultDialogText');
+        dlgText.textContent = text;
+        const dlg = document.getElementById('resultDialog');
+        dlg.style.display = 'block';
+        const confirmBtn = document.getElementById('resultConfirmBtn');
+        confirmBtn.onclick = function () {
+          location.href = backToSpectate ? '/gomoku/spectate' : '/';
+        };
+        setTimeout(() => {
+          if (dlg.style.display !== 'none') {
+            location.href = backToSpectate ? '/gomoku/spectate' : '/';
+          }
+        }, 10000);
+      }
+
+      // 安全な fetch。{ok, status, json} を返す
+      function fetchSafe(url, opts) {
         return fetch(url, opts).then(res => {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.json();
+          const status = res.status;
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            return res.json().then(j => ({ ok: res.ok, status: status, json: j }));
+          }
+          return { ok: res.ok, status: status, json: null };
         });
       }
 
@@ -218,13 +243,26 @@
         if (lastFinishedShown) return;
         lastFinishedShown = true;
 
-        const dlgText = document.getElementById('resultDialogText');
         const winSide = j && j.winner ? (j.winner === 'black' ? '黒' : '白') : '不明';
-        dlgText.textContent = `対局終了（勝者: ${winSide}）`;
-        const dlg = document.getElementById('resultDialog');
-        dlg.style.display = 'block';
-        const confirmBtn = document.getElementById('resultConfirmBtn');
-        confirmBtn.onclick = function () { location.href = '/gomoku/spectate'; };
+        showResultDialogText(`対局終了（勝者: ${winSide}）`, true);
+      }
+
+      // fallback: サーバが 404/400 等を返した場合は終了扱いとして戻す
+      function finishFallback() {
+        if (matchTimer) { clearInterval(matchTimer); matchTimer = null; }
+        if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
+        fetchSafe(origin + '/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' })
+          .then(r => {
+            let text = '対局が終了しました';
+            if (r && r.json) {
+              const s = r.json.status;
+              if (s === 'lobby') text = '対局が終了しました（ロビーへ戻ります）';
+            }
+            showResultDialogText(text, false);
+          }).catch(e => {
+            console.warn('finishFallback error', e);
+            showResultDialogText('対局が終了しました', false);
+          });
       }
 
       // 點擊處理：只在 server 成功後更新
@@ -238,33 +276,42 @@
 
         // 禁用點擊
         canvas.style.pointerEvents = 'none';
-        simpleFetchJson(origin + '/gomoku/' + encodeURIComponent(gameId) + '/move', {
+        fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '/move', {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ x: c, y: r })
-        }).then(j => {
+        }).then(resp => {
+          if (!resp.ok) {
+            console.warn('move resp not ok', resp.status);
+            finishFallback();
+            return;
+          }
+          const j = resp.json || {};
           if (j.board) board = j.board;
           if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
           if (j.finished) {
             finished = true;
-            if (j.winner) showResultText(j.winner === 'black' ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...') : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...'));
-            // 顯示確認對話框，直到玩家按下確認按鈕才返回大廳；若沒有動作，10 秒後自動返回
-            const dlgText = document.getElementById('resultDialogText');
-            dlgText.textContent = (j.winner === 'black') ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...') : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
-            const dlg = document.getElementById('resultDialog');
-            dlg.style.display = 'block';
-            const confirmBtn = document.getElementById('resultConfirmBtn');
-            confirmBtn.onclick = function () { location.href = '/'; };
-            setTimeout(() => { if (dlg.style.display !== 'none') location.href = '/'; }, 10000);
+            if (!myColor) {
+              showFinishedDialogForSpectator(j);
+            } else if (j.winner) {
+              const text = (j.winner === 'black')
+                ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
+                : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+              showResultDialogText(text, false);
+            } else {
+              showResultDialogText('対局が終了しました', false);
+            }
           }
           drawBoard();
           updateTurnText();
-        }).catch(err => { console.error('move error', err); }).finally(() => { canvas.style.pointerEvents = ''; });
+        }).catch(err => { console.error('move error', err); finishFallback(); }).finally(() => { canvas.style.pointerEvents = ''; });
       });
 
       function startMatchPoll() {
         matchTimer = setInterval(() => {
-          simpleFetchJson(origin + '/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' })
-            .then(j => {
+          fetchSafe(origin + '/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' })
+            .then(res => {
+              if (!res || !res.ok) return;
+              const j = res.json || {};
               if (!j) return;
               if (j.status === 'lobby') {
                 clearInterval(matchTimer);
@@ -285,11 +332,14 @@
         const surrenderWrap = document.getElementById('surrenderWrap');
 
         // 立即取得一次遊戲狀態
-        simpleFetchJson(origin + '/gomoku/' + encodeURIComponent(gameId), { cache: 'no-store', credentials: 'include' })
-          .then(j => {
+        fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId), { cache: 'no-store', credentials: 'include' })
+          .then(resp => {
+            if (!resp.ok) { finishFallback(); return; }
+            const j = resp.json || {};
             if (j.board) board = j.board;
             if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
             if (j.myColor) myColor = (j.myColor === 'black') ? 1 : 2;
+
             playerBlack = j.playerBlack || null;
             playerWhite = j.playerWhite || null;
             if (j.finished) { finished = true; }
@@ -303,12 +353,19 @@
             if (j.finished && !myColor) {
               showFinishedDialogForSpectator(j);
             }
-          }).catch(e => { console.error('initial game fetch', e); });
+            if (j.finished && myColor) {
+              const text = (j.winner === 'black')
+                ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
+                : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+              showResultDialogText(text, false);
+            }
+          }).catch(e => { console.error('initial game fetch', e); finishFallback(); });
 
         gameTimer = setInterval(() => {
-          simpleFetchJson(origin + '/gomoku/' + encodeURIComponent(gameId) + '?_=' + Date.now(), { cache: 'no-store', credentials: 'include' })
-            .then(j => {
-              if (!j) return;
+          fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '?_=' + Date.now(), { cache: 'no-store', credentials: 'include' })
+            .then(resp => {
+              if (!resp.ok) { finishFallback(); return; }
+              const j = resp.json || {};
               if (j.board) board = j.board;
               if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
               if (j.myColor) myColor = (j.myColor === 'black') ? 1 : 2;
@@ -325,28 +382,30 @@
               if (j.finished) {
                 if (!myColor) {
                   showFinishedDialogForSpectator(j);
-                  return;
+                } else {
+                  const text = (j.winner === 'black')
+                    ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
+                    : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+                  showResultDialogText(text, false);
                 }
-
-                const dlgText = document.getElementById('resultDialogText');
-                const text = (j.winner === 'black') ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...') : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
-                dlgText.textContent = text;
-                const dlg = document.getElementById('resultDialog');
-                dlg.style.display = 'block';
-                const confirmBtn = document.getElementById('resultConfirmBtn');
-                confirmBtn.onclick = function () { location.href = '/'; };
-                setTimeout(() => { if (dlg.style.display !== 'none') location.href = '/'; }, 10000);
               }
-            }).catch(e => { console.error('game poll error', e); });
+            }).catch(e => { console.error('game poll error', e); finishFallback(); });
         }, 1000);
       }
 
       document.getElementById('surrenderBtn').addEventListener('click', function () {
         if (!gameId) return alert('ゲームがまだ開始していません');
         if (!confirm('投降してロビーへ戻りますか？')) return;
-        simpleFetchJson(origin + '/gomoku/' + encodeURIComponent(gameId) + '/forfeit', { method: 'POST', credentials: 'include' })
-          .then(j => { alert('投降しました'); location.href = '/'; })
-          .catch(e => { console.error('forfeit error', e); alert('投降に失敗しました'); });
+        fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '/forfeit', { method: 'POST', credentials: 'include' })
+          .then(resp => {
+            if (!resp.ok) { finishFallback(); return; }
+            const j = resp.json || {};
+            const winner = j.winner;
+            const text = (winner === 'black')
+              ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
+              : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+            showResultDialogText(text, false);
+          }).catch(e => { console.error('forfeit error', e); finishFallback(); });
       });
 
       // 初期化
