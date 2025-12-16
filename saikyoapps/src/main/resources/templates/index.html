@@ -66,7 +66,7 @@
     <button type="submit">ログアウト</button>
   </form>
 
-  <form action="/i18n" method="post">
+  <form th:action="@{/i18n}" method="post">
     <input id="radio1" type="radio" name="i18n" value="ja" />
     <label for="radio1">日本語</label>
     <input id="radio2" type="radio" name="i18n" value="zh-TW" />
