@@ -65,6 +65,14 @@
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
     <button type="submit">ログアウト</button>
   </form>
+
+  <form action="/i18n" method="post">
+    <input id="radio1" type="radio" name="i18n" value="ja" />
+    <label for="radio1">日本語</label>
+    <input id="radio2" type="radio" name="i18n" value="zh-TW" />
+    <label for="radio2">中国語(繁體字)</label>
+    <button type="submit">保存</button>
+  </form>
 </body>
 
 </html>
