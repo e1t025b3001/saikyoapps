@@ -26,7 +26,7 @@ public class DarourController {
     while (cards.size() < Hand.HAND_SIZE) {
       var suit = Suit.values()[random.nextInt(Suit.values().length)];
       var rank = Rank.values()[random.nextInt(Rank.values().length)];
-      var card = new Card(suit, rank);
+      var card = Card.of(suit, rank);
 
       if (!cards.contains(card)) {
         cards.add(card);
