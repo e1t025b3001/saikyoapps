@@ -70,3 +70,10 @@ CREATE TABLE IF NOT EXISTS match_history (
     ended_at TIMESTAMP,
     extra CLOB
 );
+
+-- i18n_config: ユーザごとのロケール設定を保存
+CREATE TABLE IF NOT EXISTS i18n_config (
+    id IDENTITY,
+    user_name VARCHAR(255) UNIQUE NOT NULL,
+    locale VARCHAR(64) NOT NULL,
+);
