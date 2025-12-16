@@ -548,4 +548,13 @@ public class MatchingController {
     }
     return "tictactoe";
   }
+
+  @GetMapping("/gomoku/spectate")
+  public String gomokuSpectate(org.springframework.ui.Model model,
+      org.springframework.security.core.Authentication authentication) {
+    if (authentication != null)
+      model.addAttribute("username", authentication.getName());
+    model.addAttribute("game", "gomoku");
+    return "gomoku_spectate";
+  }
 }
