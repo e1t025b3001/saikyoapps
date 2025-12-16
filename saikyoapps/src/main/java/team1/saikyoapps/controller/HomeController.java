@@ -2,6 +2,7 @@ package team1.saikyoapps.controller;
 
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,8 +10,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import team1.saikyoapps.model.I18nConfigMappaer;
+
 @Controller
 public class HomeController {
+
+  @Autowired
+  I18nConfigMappaer i18nConfigMappaer;
 
   @GetMapping("/")
   public String index(Model model, Authentication authentication) {
@@ -29,8 +35,11 @@ public class HomeController {
     System.err.println("i18n set to: " + i18n);
     if (authentication != null) {
       model.addAttribute("username", authentication.getName());
+      model.addAttribute("i18n_title",
+          i18nConfigMappaer.findByUserName(authentication.getName()).getLocale() == "ja" ? "サイキョウアプリ" : "最強應用程式");
     } else {
       model.addAttribute("username", "guest");
+      model.addAttribute("i18n_title", "デフォルトタイトル");
     }
     return "index";
 
