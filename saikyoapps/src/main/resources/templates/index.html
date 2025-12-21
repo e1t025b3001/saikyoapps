@@ -7,23 +7,23 @@
 </head>
 
 <body>
-  <h1 th:text="'ようこそ ' + ${username} + ' さん'">ようこそ</h1>
+  <h1 th:text="${i18n_title}">ようこそ</h1>
 
   <!-- ゲーム選択セクションを追加 -->
   <section id="game-select">
-    <h2>ゲームを選択してください</h2>
+    <h2 th:text="#{home.games.select}">ゲームを選択してください</h2>
     <div id="game-buttons">
       <!-- 新增多個按鈕，data-game 使用標準化識別字串 -->
-      <button class="game-btn" data-game="marubatsu" type="button">マルバツゲーム</button>
-      <button class="game-btn" data-game="othello" type="button">オセロ</button>
-      <button class="game-btn" data-game="gomoku" type="button">5木並べ</button>
-      <button class="game-btn" data-game="shinkeisuijaku" type="button">神経衰弱</button>
+      <button class="game-btn" data-game="marubatsu" type="button" th:text="#{home.games.marubatu}">マルバツゲーム</button>
+      <button class="game-btn" data-game="othello" type="button" th:text="#{home.games.Othello}">オセロ</button>
+      <button class="game-btn" data-game="gomoku" type="button" th:text="#{home.games.gomoku}">5木並べ</button>
+      <button class="game-btn" data-game="shinkeisuijaku" type="button" th:text="#{home.games.memory-game}">神経衰弱</button>
       <button class="game-btn" data-game="uno" type="button">UNO</button>
       <button class="game-btn" data-game="dairo" type="button">大老二</button>
     </div>
     <div style="margin-top:1em;">
       <!-- マッチング開始 -->
-      <button id="start-matching-btn" type="button">マッチング開始</button>
+      <button id="start-matching-btn" type="button" th:text="#{home.match.start}">マッチング開始</button>
     </div>
   </section>
 
@@ -63,16 +63,43 @@
 
   <form th:action="@{/logout}" method="post">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-    <button type="submit">ログアウト</button>
+    <button type="submit" th:text="#{home.match.logout}">ログアウト</button>
   </form>
 
-  <form th:action="@{/i18n}" method="post">
-    <input id="radio1" type="radio" name="i18n" value="ja" />
+  <form th:action="@{/i18n}" method="post" id="i18n-form">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+    <input id="radio1" type="radio" name="i18n" value="ja" th:checked="${i18n == 'ja'}" />
     <label for="radio1">日本語</label>
-    <input id="radio2" type="radio" name="i18n" value="zh-TW" />
+    <input id="radio2" type="radio" name="i18n" value="zh_TW" th:checked="${i18n == 'zh_TW'}" />
     <label for="radio2">中国語(繁體字)</label>
-    <button type="submit">保存</button>
+    <button type="submit" id="save-i18n-btn" style="display:none;">保存</button>
   </form>
+
+  <div id="i18n-root" th:attr="data-current=${i18n}" style="display:none"></div>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    (function () {
+      const form = document.getElementById('i18n-form');
+      const saveBtn = document.getElementById('save-i18n-btn');
+      const radios = Array.from(form.querySelectorAll('input[type="radio"][name="i18n"]'));
+      const current = document.getElementById('i18n-root').dataset.current || 'ja';
+
+      function updateSaveVisibility() {
+        const selected = radios.find(r => r.checked).value;
+        if (selected !== current) {
+          saveBtn.style.display = '';
+        } else {
+          saveBtn.style.display = 'none';
+        }
+      }
+
+      radios.forEach(r => r.addEventListener('change', updateSaveVisibility));
+      updateSaveVisibility();
+    })();
+    /*]]>*/
+  </script>
+
 </body>
 
 </html>

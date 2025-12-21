@@ -1,15 +1,16 @@
 package team1.saikyoapps.model;
 
 public class I18nConfig {
-  String user;
-  String locale;
+  // Mapper の alias に合わせて loginUser を使用
+  private String loginUser;
+  private String locale;
 
-  public String getUser() {
-    return user;
+  public String getLoginUser() {
+    return loginUser;
   }
 
-  public void setUser(String user) {
-    this.user = user;
+  public void setLoginUser(String loginUser) {
+    this.loginUser = loginUser;
   }
 
   public String getLocale() {
