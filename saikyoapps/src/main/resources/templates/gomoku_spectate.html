@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>五目並べ 観戦</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 12px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: #f7f7f7;
+    }
+
+    .rowBtn {
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    .topBar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .hint {
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topBar">
+    <div>
+      <a href="/">← ロビーへ戻る</a>
+    </div>
+    <div class="hint">対局中（playing）の五目並べを一覧表示します。選択すると観戦ページへ移動します。</div>
+  </div>
+
+  <h1>五目並べ 観戦</h1>
+
+  <div>
+    <button id="reloadBtn">更新</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>GAME_ID</th>
+        <th>黒</th>
+        <th>白</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script>
+    (function () {
+      const rowsEl = document.getElementById('rows');
+
+      function escapeHtml(s) {
+        return String(s ?? '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+
+      function render(list) {
+        rowsEl.innerHTML = '';
+        if (!list || list.length === 0) {
+          rowsEl.innerHTML = '<tr><td colspan="4">観戦可能な対局がありません</td></tr>';
+          return;
+        }
+        for (const g of list) {
+          const gid = escapeHtml(g.gameId);
+          const b = escapeHtml(g.playerBlack);
+          const w = escapeHtml(g.playerWhite);
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${gid}</td>
+            <td>${b}</td>
+            <td>${w}</td>
+            <td><button class="rowBtn" data-gid="${gid}">観戦</button></td>
+          `;
+          rowsEl.appendChild(tr);
+        }
+
+        rowsEl.querySelectorAll('button.rowBtn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const gid = btn.getAttribute('data-gid');
+            if (!gid) return;
+            // 既存 gomoku.html を観戦モードで再利用（matchId に gameId）
+            window.location.href = '/gomoku?matchId=' + encodeURIComponent(gid) + '&mode=spectate';
+          });
+        });
+      }
+
+      function load() {
+        fetch('/gomoku/spectate/list', { method: 'GET', cache: 'no-store', credentials: 'include' })
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .then(render)
+          .catch(err => {
+            console.error(err);
+            rowsEl.innerHTML = '<tr><td colspan="4">取得に失敗しました</td></tr>';
+          });
+      }
+
+      document.getElementById('reloadBtn').addEventListener('click', load);
+      load();
+    })();
+  </script>
+</body>
+
+</html>

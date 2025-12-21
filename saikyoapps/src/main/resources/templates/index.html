@@ -21,9 +21,12 @@
       <button class="game-btn" data-game="uno" type="button">UNO</button>
       <button class="game-btn" data-game="dairo" type="button">大老二</button>
     </div>
+
     <div style="margin-top:1em;">
       <!-- マッチング開始 -->
       <button id="start-matching-btn" type="button" th:text="#{home.match.start}">マッチング開始</button>
+      <!-- 観戦（五目並べ）: 五目並べ選択時のみ表示 -->
+      <button id="spectate-gomoku-btn" type="button" style="display:none;margin-left:8px;">観戦（五目並べ）</button>
     </div>
   </section>
 
@@ -31,6 +34,7 @@
     (function () {
       const gameButtons = document.querySelectorAll('.game-btn');
       const startBtn = document.getElementById('start-matching-btn');
+      const spectateBtn = document.getElementById('spectate-gomoku-btn');
       let selectedGame = null;
 
       function clearSelectionStyles() {
@@ -40,12 +44,18 @@
         });
       }
 
+      function updateSpectateButtonVisibility() {
+        if (!spectateBtn) return;
+        spectateBtn.style.display = (selectedGame === 'gomoku') ? '' : 'none';
+      }
+
       gameButtons.forEach(btn => {
         btn.addEventListener('click', function () {
           selectedGame = btn.getAttribute('data-game');
           clearSelectionStyles();
           btn.style.backgroundColor = '#cce5ff';
           btn.style.border = '1px solid #004085';
+          updateSpectateButtonVisibility();
         });
       });
 
@@ -54,10 +64,18 @@
           alert('ゲームを選択してください。');
           return;
         }
-        // 選択した標準化識別字串をクエリパラメータで /matching に遷移
         const url = '/matching?game=' + encodeURIComponent(selectedGame);
         window.location.href = url;
       });
+
+      if (spectateBtn) {
+        spectateBtn.addEventListener('click', function () {
+          window.location.href = '/gomoku/spectate';
+        });
+      }
+
+      // 初期表示
+      updateSpectateButtonVisibility();
     })();
   </script>
 

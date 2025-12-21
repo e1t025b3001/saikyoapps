@@ -10,13 +10,24 @@
   <h1>マッチング成功！まもなくゲーム画面に移動します。</h1>
   <p th:text="'ゲーム: ' + ${game}">ゲーム</p>
 
-  <script th:inline="javascript">
-    /*<![CDATA[*/
-    const game = /*[[${game}]]*/ 'marubatsu';
-    setTimeout(function () {
-      window.location.href = '/' + game;
-    }, 1500);
-    /*]]>*/
+  <!-- hidden inputs を使ってサーバ側からの値を JS で安全に取得する -->
+  <input type="hidden" id="gameInput" th:value="${game}" />
+  <input type="hidden" id="matchIdInput" th:value="${matchId}" />
+
+  <script>
+    (function () {
+      // hidden input から安全に値を取得
+      const gameEl = document.getElementById('gameInput');
+      const matchEl = document.getElementById('matchIdInput');
+      const game = gameEl ? gameEl.value : 'marubatsu';
+      const matchId = matchEl ? matchEl.value : null;
+
+      setTimeout(function () {
+        let url = '/' + encodeURIComponent(game);
+        if (matchId) url += '?matchId=' + encodeURIComponent(matchId);
+        window.location.href = url;
+      }, 1200);
+    })();
   </script>
 
   <a th:href="@{/}">ゲーム選択に戻る</a>

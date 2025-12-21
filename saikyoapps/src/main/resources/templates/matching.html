@@ -12,6 +12,11 @@
   <p th:text="'ユーザー: ' + ${username}">ユーザー: guest</p>
   <p th:text="'選択ゲーム: ' + ${game}">選択ゲーム: ー</p>
 
+  <!-- 観戦導線（五目並べ用） -->
+  <p th:if="${game} == 'gomoku'">
+    <a href="/gomoku/spectate">観戦（五目並べ）</a>
+  </p>
+
   <p id="waiting-text">対戦相手を探しています…（<span id="waiting-count">0</span>）</p>
 
   <!-- 取消配對按鈕 -->
@@ -32,7 +37,7 @@
       let pollTimer = null;
 
       function checkStatus() {
-        fetch('/matching/status?game=' + encodeURIComponent(selectedGame), { method: 'GET', cache: 'no-store' })
+        fetch('/matching/status?game=' + encodeURIComponent(selectedGame), { method: 'GET', cache: 'no-store', credentials: 'include' })
           .then(res => res.json())
           .then(json => {
             const status = json.status;
@@ -40,9 +45,14 @@
             const waiting = json.waitingCount || 0;
             if (waitingCountEl) waitingCountEl.textContent = waiting;
 
+            // もし gameId が返ってきたら直接ゲーム画面へ遷移
+            if (json.gameId) {
+              window.location.href = '/' + selectedGame + '?matchId=' + encodeURIComponent(json.gameId);
+              return;
+            }
+
             // 只在玩家狀態變為 playing 且 currentGame 與目前選擇遊戲一致時視為配對成功
             if (status === 'playing' && currentGame === selectedGame) {
-              // 導向配對成功頁面，由後端與 match_success 處理後續
               window.location.href = '/match_success?game=' + encodeURIComponent(selectedGame);
             }
           })
