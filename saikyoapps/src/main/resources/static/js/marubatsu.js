@@ -5,6 +5,23 @@
     if (midEl && midEl.value) matchId = midEl.value;
   }
 
+  // 追加: 初期に matchId が見つからない場合、matching/status を一度問い合わせて gameId を取得する
+  // これにより、配對成功後の遷移タイミングのずれ等でページに matchId がない場合でも接続できる。
+  async function ensureMatchId() {
+    if (matchId) return;
+    try {
+      const resp = await fetch('/matching/status?game=marubatsu', { cache: 'no-store', credentials: 'include' });
+      if (!resp.ok) return;
+      const j = await resp.json();
+      if (j && j.status === 'playing' && j.gameId) {
+        matchId = j.gameId;
+        console.info('marubatsu: obtained matchId from matching/status', matchId);
+      }
+    } catch (e) {
+      console.warn('marubatsu: failed to fetch matching/status for initial matchId', e);
+    }
+  }
+
   const cells = Array.from(document.querySelectorAll('.cell'));
   const statusElem = document.getElementById('currentPlayer');
   const resultElem = document.getElementById('result');
@@ -117,6 +134,10 @@
 
   cells.forEach(cell => cell.addEventListener('click', onCellClick));
 
-  if (matchId) { fetchState(); pollTimer = setInterval(fetchState, pollInterval); window.addEventListener('beforeunload', function () { if (pollTimer) clearInterval(pollTimer); }); }
-  else console.warn('marubatsu: no matchId detected');
+  // 初期化: 如果沒有 matchId，嘗試透過 /matching/status 取得一次
+  (async function init() {
+    await ensureMatchId();
+    if (matchId) { fetchState(); pollTimer = setInterval(fetchState, pollInterval); window.addEventListener('beforeunload', function () { if (pollTimer) clearInterval(pollTimer); }); }
+    else console.warn('marubatsu: no matchId detected');
+  })();
 })();

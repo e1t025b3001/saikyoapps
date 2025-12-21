@@ -3,14 +3,19 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>対戦結果</title>
+  <title>対局結果</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}" />
 </head>
 
-<body>
-  <h1 th:text="'ゲーム: ' + ${game}">ゲーム</h1>
-  <p th:text="'勝者: ' + ${winner}">勝者</p>
-  <p th:text="'敗者: ' + ${loser}">敗者</p>
-  <a th:href="@{/}">ゲーム選択に戻る</a>
+<body data-page="match_result">
+  <div class="container section-center">
+    <h1>対局結果</h1>
+    <div class="card">
+      <p>勝者: <span th:text="${winner}">winner</span></p>
+      <p>敗者: <span th:text="${loser}">loser</span></p>
+      <a th:href="@{/}" class="btn">ゲーム一覧に戻る</a>
+    </div>
+  </div>
 </body>
 
 </html>

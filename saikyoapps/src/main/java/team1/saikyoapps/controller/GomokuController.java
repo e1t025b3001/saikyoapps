@@ -15,6 +15,9 @@ import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/gomoku")
@@ -33,6 +36,9 @@ public class GomokuController {
 
   @Autowired
   MatchingQueueMapper matchingQueueMapper;
+
+  // 新增：用於延遲刪除已結束對局的排程器（與 marubatsu 的行為對齊）
+  private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
   // 直近で終了した対局の勝敗情報を一時保持し、ポーリング中のクライアントに返すためのキャッシュ
   // 注: DB運用方針Aによりゲーム/手は削除しないため、本キャッシュは結果表示の補助用途のみ
@@ -73,10 +79,19 @@ public class GomokuController {
           res.put("board", null);
           res.put("turn", null);
           res.put("finished", true);
-          res.put("winner", info.get("winner"));
+          // フロントが winner に色情報("black"/"white")を期待しているため、winnerColor を優先して返す
+          if (info.containsKey("winnerColor")) {
+            res.put("winner", info.get("winnerColor"));
+          } else {
+            res.put("winner", info.get("winner"));
+          }
           res.put("loser", info.get("loser"));
           if (info.containsKey("winningLine")) {
             res.put("winningLine", info.get("winningLine"));
+          }
+          // 追加: 勝者の色情報も返す
+          if (info.containsKey("winnerColor")) {
+            res.put("winnerColor", info.get("winnerColor"));
           }
           res.put("playerBlack", null);
           res.put("playerWhite", null);
@@ -111,10 +126,18 @@ public class GomokuController {
       // ゲーム終了時にキャッシュがあれば勝敗情報も返す（結果表示の補助）
       if (finished && finishedWinners.containsKey(gameId)) {
         Map<String, Object> info = finishedWinners.get(gameId);
-        res.put("winner", info.get("winner"));
+        // フロントは winner に色情報を期待しているため、winnerColor を優先
+        if (info.containsKey("winnerColor")) {
+          res.put("winner", info.get("winnerColor"));
+        } else {
+          res.put("winner", info.get("winner"));
+        }
         res.put("loser", info.get("loser"));
         if (info.containsKey("winningLine")) {
           res.put("winningLine", info.get("winningLine"));
+        }
+        if (info.containsKey("winnerColor")) {
+          res.put("winnerColor", info.get("winnerColor"));
         }
       }
 
@@ -293,13 +316,9 @@ public class GomokuController {
           String loserName = (winnerName != null && winnerName.equals(g.getPlayerBlack())) ? g.getPlayerWhite()
               : g.getPlayerBlack();
 
-          try {
-            // match_history には勝者ユーザ名を保存する
-            historyMapper.insert("gomoku", g.getPlayerBlack(), g.getPlayerWhite(), winnerName, null,
-                new Timestamp(System.currentTimeMillis()), null);
-          } catch (Exception ex) {
-            logger.warn("Failed to insert match_history for win {}: {}", gameId, ex.getMessage());
-          }
+          // match_history には勝者ユーザ名を保存する
+          historyMapper.insert("gomoku", g.getPlayerBlack(), g.getPlayerWhite(), winnerName, null,
+              new Timestamp(System.currentTimeMillis()), null);
 
           try {
             gameMapper.update(g.getGameId(), newBoardJson, null, g.getStatus());
@@ -333,11 +352,31 @@ public class GomokuController {
             logger.warn("Failed to cache finished winner info for {}: {}", gameId, ex.getMessage());
           }
 
+          // 排程在 5 秒後刪除對局與手紀錄（與 marubatsu 風格一致）
+          try {
+            scheduler.schedule(() -> {
+              try {
+                moveMapper.deleteByGameId(gameId);
+              } catch (Exception e) {
+                logger.warn("Scheduled move delete failed for {}: {}", gameId, e.getMessage());
+              }
+              try {
+                gameMapper.deleteByGameId(gameId);
+              } catch (Exception e) {
+                logger.warn("Scheduled game delete failed for {}: {}", gameId, e.getMessage());
+              }
+              finishedWinners.remove(gameId);
+            }, 5, java.util.concurrent.TimeUnit.SECONDS);
+          } catch (Exception ex) {
+            logger.warn("Failed to schedule deletion for {}: {}", gameId, ex.getMessage());
+          }
+
           Map<String, Object> resWin = new HashMap<>();
           resWin.put("board", board);
           resWin.put("turn", null);
           resWin.put("finished", true);
-          resWin.put("winner", winnerName);
+          // フロントは winner に色を期待しているため color を入れる
+          resWin.put("winner", color);
           resWin.put("winnerColor", color);
           resWin.put("loser", loserName);
           resWin.put("winningLine", winningLine);
@@ -355,6 +394,7 @@ public class GomokuController {
       if (win) {
         // 基本は勝利分岐でreturn済みだが、念のため
         res.put("winnerColor", color);
+        res.put("winner", color);
       }
       return ResponseEntity.ok(res);
     } catch (Exception ex) {
@@ -431,14 +471,56 @@ public class GomokuController {
         logger.warn("Failed to cache finished forfeit info for {}: {}", gameId, ex.getMessage());
       }
 
+      // 排程在 5 秒後刪除對局與手紀錄（與 marubatsu 風格一致）
+      try {
+        scheduler.schedule(() -> {
+          try {
+            moveMapper.deleteByGameId(gameId);
+          } catch (Exception e) {
+            logger.warn("Scheduled move delete failed for forfeit {}: {}", gameId, e.getMessage());
+          }
+          try {
+            gameMapper.deleteByGameId(gameId);
+          } catch (Exception e) {
+            logger.warn("Scheduled game delete failed for forfeit {}: {}", gameId, e.getMessage());
+          }
+          finishedWinners.remove(gameId);
+        }, 5, java.util.concurrent.TimeUnit.SECONDS);
+      } catch (Exception ex) {
+        logger.warn("Failed to schedule deletion for forfeit {}: {}", gameId, ex.getMessage());
+      }
+
       Map<String, Object> res = new HashMap<>();
-      res.put("winner", winner);
+      // フロントは winner に色を期待しているため色情報を返す
+      String winnerColorResp = null;
+      if (winner != null) {
+        if (winner.equals(g.getPlayerBlack()))
+          winnerColorResp = "black";
+        else if (winner.equals(g.getPlayerWhite()))
+          winnerColorResp = "white";
+      }
+      res.put("winner", winnerColorResp);
+      res.put("winnerColor", winnerColorResp);
       res.put("loser", loser);
       return ResponseEntity.ok(res);
     } catch (Exception ex) {
       logger.error("Error in forfeitGame for {}", gameId, ex);
       return ResponseEntity.status(500).body(Map.of("error", "server error"));
     }
+  }
+
+  // 新增：用於延遲刪除對局的排程任務
+  private void scheduleGameDeletion(String gameId) {
+    scheduler.schedule(() -> {
+      try {
+        // 刪除 moves
+        moveMapper.deleteByGameId(gameId);
+        // 刪除 finishedWinners 中的暫存資料
+        finishedWinners.remove(gameId);
+      } catch (Exception e) {
+        logger.error("Failed to delete game data for {}: {}", gameId, e.getMessage());
+      }
+    }, 5, TimeUnit.SECONDS);
   }
 
 }

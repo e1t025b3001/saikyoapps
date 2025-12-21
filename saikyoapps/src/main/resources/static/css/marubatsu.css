@@ -1,0 +1,120 @@
+/* marubatsu.css - page specific futuristic decorations for Marubatsu (tic-tac-toe) */
+:root {
+  --maru-accent: #0f172a;
+  --maru-glow: rgba(0, 0, 0, 0.14);
+}
+
+/* vivid header hero for marubatsu */
+body[data-game="marubatsu"] main {
+  position: relative;
+  padding-top: 2rem;
+}
+
+body[data-game="marubatsu"] main::before {
+  content: '';
+  position: absolute;
+  left: -8%;
+  top: -8%;
+  width: 40%;
+  height: 40%;
+  background: radial-gradient(circle at 30% 30%, rgba(124, 58, 237, 0.12), transparent 30%);
+  filter: blur(28px);
+  transform: rotate(-12deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* stronger board frame */
+body[data-game="marubatsu"] #board {
+  z-index: 2;
+  margin: 1rem auto;
+}
+
+body[data-game="marubatsu"] .cell {
+  border-radius: 10px;
+  border: 2px solid #000;
+  background: linear-gradient(180deg, #fff, #f4f7ff);
+  width: 110px;
+  height: 110px;
+  font-size: 2.4rem;
+  color: #0b1220;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* animate X and O drawing */
+body[data-game="marubatsu"] .cell.X::after,
+body[data-game="marubatsu"] .cell.O::after {
+  content: '';
+  display: block;
+  width: 70%;
+  height: 70%;
+}
+
+/* X drawing */
+body[data-game="marubatsu"] .cell.X {
+  position: relative;
+}
+
+body[data-game="marubatsu"] .cell.X::after {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.95), rgba(6, 182, 212, 0.9));
+  mask-image: linear-gradient(#000 0 0);
+  transform: rotate(45deg) scaleX(1);
+  animation: drawX .22s linear;
+}
+
+@keyframes drawX {
+  from {
+    transform: scale(0.2) rotate(45deg);
+    opacity: 0
+  }
+
+  to {
+    transform: scale(1) rotate(45deg);
+    opacity: 1
+  }
+}
+
+/* O drawing */
+body[data-game="marubatsu"] .cell.O {
+  position: relative;
+}
+
+body[data-game="marubatsu"] .cell.O::after {
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.18) inset, 0 0 14px rgba(124, 58, 237, 0.12);
+  border: 6px solid rgba(124, 58, 237, 0.85);
+  background: transparent;
+  animation: drawO .28s ease-out;
+}
+
+@keyframes drawO {
+  from {
+    transform: scale(0.2);
+    opacity: 0
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1
+  }
+}
+
+/* small screens */
+@media (max-width:640px) {
+  body[data-game="marubatsu"] .cell {
+    width: 72px;
+    height: 72px;
+    font-size: 1.6rem;
+    border-radius: 8px
+  }
+}
+
+/* result highlight */
+body[data-game="marubatsu"] #result {
+  text-transform: uppercase;
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 1.05rem;
+}

@@ -3,39 +3,39 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>トップ</title>
+  <title>SaikyoApps</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}" />
+  <link rel="stylesheet" th:href="@{/css/index.css}" />
 </head>
 
-<body>
-  <h1 th:text="'ようこそ ' + ${username} + ' さん'">ようこそ</h1>
-
-  <!-- ゲーム選択セクションを追加 -->
-  <section id="game-select">
-    <h2>ゲームを選択してください</h2>
+<body data-page="index">
+  <div class="container section-center">
+    <h1>ゲーム一覧</h1>
     <div id="game-buttons">
-      <!-- 新增多個按鈕，data-game 使用標準化識別字串 -->
-      <button class="game-btn" data-game="marubatsu" type="button">マルバツゲーム</button>
-      <button class="game-btn" data-game="othello" type="button">オセロ</button>
-      <button class="game-btn" data-game="gomoku" type="button">5木並べ</button>
-      <button class="game-btn" data-game="shinkeisuijaku" type="button">神経衰弱</button>
-      <button class="game-btn" data-game="uno" type="button">UNO</button>
-      <button class="game-btn" data-game="dairo" type="button">大老二</button>
+      <a th:href="@{/matching(game='marubatsu')}" class="game-btn" data-game="marubatsu">マルバツ</a>
+      <a th:href="@{/matching(game='gomoku')}" class="game-btn" data-game="gomoku">五目並べ</a>
+      <a th:href="@{/matching(game='othello')}" class="game-btn" data-game="othello">オセロ</a>
+      <a th:href="@{/matching(game='shinkeisuijaku')}" class="game-btn" data-game="shinkeisuijaku">神経衰弱</a>
+      <a th:href="@{/matching(game='uno')}" class="game-btn" data-game="uno">UNO</a>
+      <a th:href="@{/matching(game='dairo')}" class="game-btn" data-game="dairo">大老二</a>
     </div>
 
-    <div style="margin-top:1em;">
-      <!-- マッチング開始 -->
-      <button id="start-matching-btn" type="button">マッチング開始</button>
-      <!-- 観戦（五目並べ）: 五目並べ選択時のみ表示 -->
-      <button id="spectate-gomoku-btn" type="button" style="display:none;margin-left:8px;">観戦（五目並べ）</button>
+    <!-- 追加: 選擇遊戲後的操作按鈕（Matching / Spectate） -->
+    <div id="game-actions" style="margin-top:16px; display:flex; gap:8px; justify-content:center;">
+      <button id="start-matching-btn" class="btn primary">マッチング</button>
+      <button id="spectate-btn" class="btn" style="display:none;">観戦</button>
     </div>
-  </section>
+  </div>
 
   <script>
     (function () {
       const gameButtons = document.querySelectorAll('.game-btn');
       const startBtn = document.getElementById('start-matching-btn');
-      const spectateBtn = document.getElementById('spectate-gomoku-btn');
+      const spectateBtn = document.getElementById('spectate-btn');
       let selectedGame = null;
+
+      // どのゲームが観戦をサポートするか
+      const spectateSupportedGames = ['gomoku'];
 
       function clearSelectionStyles() {
         gameButtons.forEach(b => {
@@ -46,11 +46,13 @@
 
       function updateSpectateButtonVisibility() {
         if (!spectateBtn) return;
-        spectateBtn.style.display = (selectedGame === 'gomoku') ? '' : 'none';
+        spectateBtn.style.display = spectateSupportedGames.includes(selectedGame) ? '' : 'none';
       }
 
       gameButtons.forEach(btn => {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function (e) {
+          // prevent immediate navigation so user can select and then choose action
+          e.preventDefault();
           selectedGame = btn.getAttribute('data-game');
           clearSelectionStyles();
           btn.style.backgroundColor = '#cce5ff';
@@ -59,18 +61,23 @@
         });
       });
 
-      startBtn.addEventListener('click', function () {
-        if (!selectedGame) {
-          alert('ゲームを選択してください。');
-          return;
-        }
-        const url = '/matching?game=' + encodeURIComponent(selectedGame);
-        window.location.href = url;
-      });
+      if (startBtn) {
+        startBtn.addEventListener('click', function () {
+          if (!selectedGame) {
+            alert('ゲームを選択してください。');
+            return;
+          }
+          const url = '/matching?game=' + encodeURIComponent(selectedGame);
+          window.location.href = url;
+        });
+      }
 
       if (spectateBtn) {
         spectateBtn.addEventListener('click', function () {
-          window.location.href = '/gomoku/spectate';
+          if (!selectedGame) { alert('先にゲームを選択してください。'); return; }
+          if (!spectateSupportedGames.includes(selectedGame)) { alert('このゲームは観戦できません。'); return; }
+          const url = '/' + encodeURIComponent(selectedGame) + '/spectate';
+          window.location.href = url;
         });
       }
 

@@ -1,0 +1,30 @@
+/* tictactoe.css - neon cyberpunk tweaks */
+body[data-game="tictactoe"] main::before {
+  content: '';
+  position: absolute;
+  left: 5%;
+  top: -6%;
+  width: 40%;
+  height: 30%;
+  background: radial-gradient(circle at 20% 30%, rgba(124, 58, 237, 0.12), transparent 30%);
+  filter: blur(26px);
+  z-index: 0
+}
+
+body[data-game="tictactoe"] .cell {
+  border-radius: 10px;
+  border: 1.5px solid rgba(124, 58, 237, 0.22);
+  background: linear-gradient(180deg, rgba(124, 58, 237, 0.03), rgba(99, 102, 241, 0.02));
+  box-shadow: 0 8px 22px rgba(124, 58, 237, 0.06);
+}
+
+body[data-game="tictactoe"] #board {
+  max-width: 420px
+}
+
+@media(max-width:640px) {
+  body[data-game="tictactoe"] .cell {
+    width: 72px;
+    height: 72px
+  }
+}

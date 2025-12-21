@@ -4,62 +4,63 @@
 <head>
   <meta charset="UTF-8" />
   <title>三目並べ</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}" />
+  <link rel="stylesheet" th:href="@{/css/tictactoe.css}" />
   <style>
+    /* 最小限のレイアウト残し（機能に影響しない） */
     #board {
       display: grid;
-      grid-template-columns: repeat(3, 100px);
-      grid-template-rows: repeat(3, 100px);
-      gap: 5px;
-      margin-bottom: 10px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      max-width: 360px;
     }
 
     .cell {
-      width: 100px;
-      height: 100px;
-      font-size: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      background: #fff;
-      border: 2px solid #444;
-      user-select: none;
-    }
-
-    .cell.disabled {
-      cursor: default;
-      background: #eee;
+      user-select: none
     }
   </style>
 </head>
 
-<body>
-  <h1>三目並べ（まるばつ）</h1>
-
-  <p th:text="'ユーザー: ' + ${username}">ユーザー: guest</p>
-
-  <div id="game">
-    <div id="status">現在の手番: <span id="currentPlayer">先手 (X)</span></div>
-    <div id="board">
-      <!-- 3x3 のセルを JS で初期化します -->
-      <div class="cell" data-row="0" data-col="0"></div>
-      <div class="cell" data-row="0" data-col="1"></div>
-      <div class="cell" data-row="0" data-col="2"></div>
-
-      <div class="cell" data-row="1" data-col="0"></div>
-      <div class="cell" data-row="1" data-col="1"></div>
-      <div class="cell" data-row="1" data-col="2"></div>
-
-      <div class="cell" data-row="2" data-col="0"></div>
-      <div class="cell" data-row="2" data-col="1"></div>
-      <div class="cell" data-row="2" data-col="2"></div>
+<body th:attr="data-game=${game}">
+  <div class="header">
+    <div class="container nav">
+      <div class="brand">SaikyoApps</div>
     </div>
-
-    <div id="result" style="margin-top:10px;font-weight:bold"></div>
-    <button id="resetBtn" style="margin-top:10px">リセット</button>
   </div>
 
-  <a th:href="@{/}">戻る</a>
+  <main class="container section-center">
+    <h1>三目並べ</h1>
+
+    <form th:action="@{/match/forfeit}" method="post">
+      <input type="hidden" name="game" th:value="${game}" />
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <button type="submit" class="btn secondary">戻る（投降）</button>
+    </form>
+
+    <div id="game" class="card" style="padding:1rem; margin-top:1rem;">
+      <div id="status">現在の手番: <span id="currentPlayer">先手 (X)</span></div>
+      <div id="board" class="tictactoe game-board" style="margin-top:0.75rem;">
+        <div class="cell" data-row="0" data-col="0"></div>
+        <div class="cell" data-row="0" data-col="1"></div>
+        <div class="cell" data-row="0" data-col="2"></div>
+
+        <div class="cell" data-row="1" data-col="0"></div>
+        <div class="cell" data-row="1" data-col="1"></div>
+        <div class="cell" data-row="1" data-col="2"></div>
+
+        <div class="cell" data-row="2" data-col="0"></div>
+        <div class="cell" data-row="2" data-col="1"></div>
+        <div class="cell" data-row="2" data-col="2"></div>
+      </div>
+
+      <div id="result" style="margin-top:10px;font-weight:bold"></div>
+    </div>
+  </main>
+
+  <!-- CSRF hidden for JS -->
+  <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
+  <!-- matchId hidden for JS -->
+  <input type="hidden" id="matchId" name="matchId" th:value="${matchId}" />
 
   <script src="/js/tictactoe.js"></script>
 </body>
