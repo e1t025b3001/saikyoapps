@@ -19,7 +19,13 @@ public class DarourController {
   public String darour(Model model, Authentication authentication) {
     model.addAttribute("username", authentication.getName());
 
-    // 13枚のランダムなカードを用意する
+    // 仮のユーザー名
+    // TODO マッチング機能実装時に削除
+    final String user1 = "player1";
+    final String user2 = "player2";
+    final String user3 = "player3";
+
+    // ランダムなカードを用意する
     Random random = new Random();
 
     var cards = new ArrayList<Card>();
