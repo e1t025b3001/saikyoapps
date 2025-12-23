@@ -20,13 +20,30 @@
       const gameEl = document.getElementById('gameInput');
       const matchEl = document.getElementById('matchIdInput');
       const game = gameEl ? gameEl.value : 'marubatsu';
-      const matchId = matchEl ? matchEl.value : null;
+      let matchId = matchEl ? matchEl.value : null;
 
-      setTimeout(function () {
+      // 如果沒有 matchId，嘗試透過 matching/status 取得一次 gameId，再 redirect
+      async function resolveAndRedirect() {
+        if (!matchId) {
+          try {
+            const resp = await fetch('/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' });
+            if (resp.ok) {
+              const j = await resp.json();
+              if (j && j.status === 'playing' && j.gameId) {
+                matchId = j.gameId;
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to fetch matching/status for redirect', e);
+          }
+        }
+
         let url = '/' + encodeURIComponent(game);
         if (matchId) url += '?matchId=' + encodeURIComponent(matchId);
         window.location.href = url;
-      }, 1200);
+      }
+
+      setTimeout(resolveAndRedirect, 1200);
     })();
   </script>
 
