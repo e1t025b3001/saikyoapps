@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>マルバツゲーム</title>
+  <title th:text="#{game.marubatsu.title}">三目並べ</title>
   <link rel="stylesheet" th:href="@{/css/main.css}" />
   <link rel="stylesheet" th:href="@{/css/marubatsu.css}" />
   <style>
@@ -29,16 +29,16 @@
   </div>
 
   <main class="container section-center">
-    <h1>マルバツゲーム</h1>
+    <h1 th:text="#{game.marubatsu.title}">三目並べ</h1>
 
     <form th:action="@{/match/forfeit}" method="post">
       <input type="hidden" name="game" th:value="${game}" />
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-      <button type="submit" class="btn secondary">戻る（投降）</button>
+      <button type="submit" class="btn secondary" th:text="#{game.action.forfeit}">戻る（投降）</button>
     </form>
 
     <div id="game" class="card" style="padding:1rem; margin-top:1rem;">
-      <div id="status">現在の手番: <span id="currentPlayer">先手 (X)</span></div>
+      <div id="status" th:text="#{game.status.turn}">現在の手番: <span id="currentPlayer">先手 (X)</span></div>
       <div id="board" class="tictactoe game-board" style="margin-top:0.75rem;">
         <div class="cell" data-row="0" data-col="0"></div>
         <div class="cell" data-row="0" data-col="1"></div>

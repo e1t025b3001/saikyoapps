@@ -3,16 +3,22 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>マッチング成功</title>
+  <title th:text="#{match.success.title} ?: 'マッチング成功'">マッチング成功</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}" />
 </head>
 
-<body>
-  <h1 th:text="#{match.success}">マッチング成功！まもなくゲーム画面に移動します。</h1>
-  <p th:text="#{match.game(${game})}">ゲーム</p>
+<body data-page="match_success">
+  <div class="container section-center">
+    <h1 th:text="#{match.success} ?: 'マッチング成功！まもなくゲーム画面に移動します。'">マッチング成功！まもなくゲーム画面に移動します。</h1>
 
-  <!-- hidden inputs を使ってサーバ側からの値を JS で安全に取得する -->
-  <input type="hidden" id="gameInput" th:value="${game}" />
-  <input type="hidden" id="matchIdInput" th:value="${matchId}" />
+    <!-- hidden inputs を使ってサーバ側からの値を JS で安全に取得する -->
+    <input type="hidden" id="gameInput" th:value="${game}" />
+    <input type="hidden" id="matchIdInput" th:value="${matchId}" />
+
+    <div class="card">
+      <a th:href="@{/}" class="btn" th:text="#{match.return.selectgame} ?: 'ゲーム選択に戻る'">ゲーム選択に戻る</a>
+    </div>
+  </div>
 
   <script>
     (function () {
@@ -47,7 +53,6 @@
     })();
   </script>
 
-  <a th:href="@{/}" th:text="#{match.return.selectgame}">ゲーム選択に戻る</a>
 </body>
 
 </html>

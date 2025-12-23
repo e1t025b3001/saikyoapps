@@ -3,38 +3,20 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>大老二</title>
+  <title th:text="#{game.dairo.title}">大老二</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}" />
 </head>
 
-<body th:attr="data-game=${game}">
-  <h1>大老二遊戲畫面</h1>
-
-  <form th:action="@{/match/forfeit}" method="post">
-    <input type="hidden" name="game" th:value="${game}" />
-    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-    <button type="submit">戻る（投降）</button>
-  </form>
-
-  <a th:href="@{/}">直接返回選單（不會更新狀態）</a>
-
-  <script th:inline="javascript">
-    /*<![CDATA[*/
-    const game = /*[[${game}]]*/ 'dairo';
-    /*]]>*/
-    (function () {
-      const pollInterval = 2000;
-      let timer = setInterval(function () {
-        fetch('/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store' })
-          .then(r => r.json())
-          .then(j => {
-            if (j.status === 'lobby') {
-              window.location.href = '/';
-            }
-          }).catch(e => console.error(e));
-      }, pollInterval);
-      window.addEventListener('beforeunload', function () { clearInterval(timer); });
-    })();
-  </script>
+<body data-page="dairo">
+  <div class="container section-center">
+    <h1 th:text="#{game.dairo.title}">大老二遊戲畫面</h1>
+    <div class="card">
+      <p th:text="#{game.dairo.description}">大老二のゲーム画面です。（ダミー画面）</p>
+      <p th:if="${#httpServletRequest.getAttribute('i18n') == 'ja'}">（ローマ字表記: Dairō ni）</p>
+      <p th:if="${i18n == 'en'}" th:text="${'Dairo - Big Two'}">Dairo - Big Two</p>
+      <a th:href="@{/}" class="btn" th:text="#{match.return.selectgame}">戻る</a>
+    </div>
+  </div>
 </body>
 
 </html>

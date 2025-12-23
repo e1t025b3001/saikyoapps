@@ -551,4 +551,39 @@ a:hover::after {
   border-color: #000000;
 }
 
+/* i18n form styles */
+#i18n-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+#i18n-form label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.03);
+  color: var(--muted-color);
+  font-size: 0.95rem;
+}
+
+#i18n-form input[type="radio"] {
+  transform: scale(1.05);
+}
+
+#save-i18n-btn.btn {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.95rem;
+}
+
+/* Ensure i18n-root hidden element doesn't affect layout */
+#i18n-root {
+  display: none;
+}
+
 /* end of additions */

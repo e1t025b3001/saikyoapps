@@ -9,7 +9,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.LocaleResolver;
 
@@ -35,63 +34,30 @@ public class HomeController {
     if (authentication != null) {
       String user = authentication.getName();
       model.addAttribute("username", user);
-
-      // DB からユーザの言語設定を読み出す（なければデフォルト ja）
-      team1.saikyoapps.model.I18nConfig cfg = i18nConfigMappaer.findByUserName(user);
-      String localeStr = (cfg == null || cfg.getLocale() == null) ? "ja" : cfg.getLocale();
-      model.addAttribute("i18n", localeStr);
-
-      // messageSource からタイトルを取得
-      Locale locale = "zh_TW".equals(localeStr) ? Locale.forLanguageTag("zh-TW") : Locale.forLanguageTag("ja");
-      String title = messageSource.getMessage("title", new Object[] { user }, locale);
-      model.addAttribute("i18n_title", title);
-
     } else {
       model.addAttribute("username", "guest");
-      model.addAttribute("i18n", "ja");
-      String title = messageSource.getMessage("title", new Object[] { "guest" }, Locale.forLanguageTag("ja"));
-      model.addAttribute("i18n_title", title);
     }
+
+    // 如果 LocaleModelAdvice 已經放入了 i18n（來源：session/cookie/RequestContext），不要覆寫。
+    if (!model.containsAttribute("i18n")) {
+      if (authentication != null) {
+        team1.saikyoapps.model.I18nConfig cfg = i18nConfigMappaer.findByUserName(authentication.getName());
+        String localeStr = (cfg == null || cfg.getLocale() == null) ? "ja" : cfg.getLocale();
+        model.addAttribute("i18n", localeStr);
+      } else {
+        model.addAttribute("i18n", "ja");
+      }
+    }
+
+    // 使用最終決定的 i18n 來取得 title 並放入 model
+    String localeStr = (String) model.asMap().getOrDefault("i18n", "ja");
+    Locale locale = "zh_TW".equals(localeStr) ? Locale.forLanguageTag("zh-TW")
+        : ("en".equals(localeStr) ? Locale.forLanguageTag("en") : Locale.forLanguageTag("ja"));
+    String usernameForTitle = (String) model.asMap().getOrDefault("username", "guest");
+    String title = messageSource.getMessage("title", new Object[] { usernameForTitle }, locale);
+    model.addAttribute("i18n_title", title);
 
     return "index";
-  }
-
-  @PostMapping("/i18n")
-  public String setI18n(@RequestParam String i18n, Model model, Authentication authentication,
-      HttpServletRequest request, HttpServletResponse response) {
-    model.addAttribute("i18n", i18n);
-    System.err.println("i18n set to: " + i18n);
-
-    if (authentication != null) {
-      String user = authentication.getName();
-      model.addAttribute("username", user);
-
-      // DB のレコードを取得して null チェック → 存在しなければ挿入、あれば更新する
-      team1.saikyoapps.model.I18nConfig cfg = i18nConfigMappaer.findByUserName(user);
-      if (cfg == null) {
-        i18nConfigMappaer.insert(user, i18n);
-        System.err.println("inserted i18n for user=" + user + " locale=" + i18n);
-      } else {
-        i18nConfigMappaer.updateLocaleByUserName(user, i18n);
-        System.err.println("updated i18n for user=" + user + " locale=" + i18n);
-      }
-
-      // セッションの Locale を更新して、次回以降のリクエストに反映させる
-      Locale locale = "zh_TW".equals(i18n) ? Locale.forLanguageTag("zh-TW") : Locale.forLanguageTag("ja");
-      try {
-        localeResolver.setLocale(request, response, locale);
-      } catch (Exception e) {
-        // setLocale は環境によって例外が出る場合があるため安全にログ出力する
-        System.err.println("failed to set locale in resolver: " + e.getMessage());
-      }
-
-      // PRG: 設定後はリダイレクトして GET / で反映させる
-      return "redirect:/";
-    } else {
-      model.addAttribute("username", "guest");
-      model.addAttribute("i18n_title", "デフォルトタイトル");
-      return "index";
-    }
   }
 
   @GetMapping("/login")
