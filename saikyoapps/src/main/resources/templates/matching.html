@@ -7,23 +7,27 @@
 </head>
 
 <body>
-  <h1>マッチング中</h1>
+  <h1 th:text="#{match.middle}">マッチング中</h1>
 
-  <p th:text="'ユーザー: ' + ${username}">ユーザー: guest</p>
-  <p th:text="'選択ゲーム: ' + ${game}">選択ゲーム: ー</p>
+  <!--
+    <p th:text="'ユーザー: ' + ${username}">ユーザー: guest</p>
+    <p th:text="'選択ゲーム: ' + ${game}">選択ゲーム: ー</p>
+    -->
+  <p th:text="#{match.user(${username})}">ユーザー: guest</p>
+  <p th:text="#{match.selectedGame(${game})}">選択ゲーム: ー</p>
 
   <!-- 観戦導線（五目並べ用） -->
   <p th:if="${game} == 'gomoku'">
     <a href="/gomoku/spectate">観戦（五目並べ）</a>
   </p>
 
-  <p id="waiting-text">対戦相手を探しています…（<span id="waiting-count">0</span>）</p>
+  <p id="waiting-text" th:text="#{match.waiting}">対戦相手を探しています…（<span id="waiting-count">0</span>）</p>
 
   <!-- 取消配對按鈕 -->
   <form th:action="@{/match/leave}" method="post">
     <input type="hidden" name="game" th:value="${game}" />
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-    <button type="submit">取消配對 / 返回上一頁</button>
+    <button type="submit" th:text="#{match.cancel}">キャンセル</button>
   </form>
 
   <script th:inline="javascript">

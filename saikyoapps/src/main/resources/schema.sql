@@ -71,6 +71,13 @@ CREATE TABLE IF NOT EXISTS match_history (
     extra CLOB
 );
 
+-- i18n_config: ユーザごとのロケール設定を保存
+CREATE TABLE IF NOT EXISTS i18n_config (
+    id IDENTITY,
+    login_user VARCHAR(255) UNIQUE NOT NULL,
+    locale VARCHAR(64) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS marubatsu_game (
     id IDENTITY,
     game_id VARCHAR(64) UNIQUE,
