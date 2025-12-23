@@ -3,7 +3,7 @@ package team1.saikyoapps.darour.model;
 import java.util.ArrayList;
 
 public class Hand {
-  public static final Integer HAND_SIZE = 13;
+  public static final Integer HAND_SIZE = 17;
 
   private final ArrayList<Card> cards;
 
@@ -24,6 +24,15 @@ public class Hand {
 
       return card1.getSuit().isStrongerThan(card2.getSuit()) ? 1 : -1;
     });
+  }
+
+  public boolean hasClubThree() {
+    for (Card card : cards) {
+      if (card.getSuit() == Suit.CLUB && card.getRank() == Rank.THREE) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public ArrayList<Card> getCards() {
