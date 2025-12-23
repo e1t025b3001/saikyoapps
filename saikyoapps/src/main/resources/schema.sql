@@ -93,3 +93,15 @@ CREATE TABLE IF NOT EXISTS marubatsu_move (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     extra CLOB
 );
+
+-- darour 用のテーブル --
+
+CREATE TABLE IF NOT EXISTS darour_game (
+  id IDENTITY,
+  player1 VARCHAR(255),
+  player2 VARCHAR(255),
+  player3 VARCHAR(255),
+  game_state VARCHAR(32)
+)
+
+-- darour 用のテーブルここまで --
