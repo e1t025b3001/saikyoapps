@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>五目並べ（Gomoku）</title>
+  <title th:text="#{game.gomoku.title}">五目並べ（Gomoku）</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -68,7 +68,7 @@
 </head>
 
 <body th:attr="data-game=${game}">
-  <h1 style="text-align:center;">五目並べ</h1>
+  <h1 style="text-align:center;" th:text="#{game.gomoku.title}">五目並べ</h1>
 
   <div id="spectateBanner" class="spectateBanner"></div>
 
@@ -77,7 +77,7 @@
   </div>
 
   <div id="surrenderWrap" style="text-align:center;margin-top:8px;">
-    <button id="surrenderBtn">投降</button>
+    <button id="surrenderBtn" th:text="#{game.action.forfeit}">投降</button>
   </div>
 
   <!-- 勝敗確認ダイアログ -->
@@ -85,14 +85,14 @@
     style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
     <div style="background:#fff;padding:16px;border-radius:6px;width:320px;margin:120px auto;text-align:center;">
       <div id="resultDialogText" style="margin-bottom:12px;font-weight:bold;color:#b00;"></div>
-      <button id="resultConfirmBtn">確認並返回大廳</button>
+      <button id="resultConfirmBtn" th:text="#{game.action.confirmAndReturn}">確認並返回大廳</button>
     </div>
   </div>
 
   <div id="boardWrap">
     <canvas id="gomokuBoard" width="600" height="600"></canvas>
     <div id="info">
-      <div id="turnInfo">等待中...</div>
+      <div id="turnInfo" th:text="#{game.turn.waiting}">等待中...</div>
       <div id="result" style="color:darkred;font-weight:bold;"></div>
     </div>
   </div>
@@ -294,11 +294,11 @@
               showFinishedDialogForSpectator(j);
             } else if (j.winner) {
               const text = (j.winner === 'black')
-                ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
-                : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+                ? (myColor === 1 ? MSG_YOUR_WIN : MSG_YOUR_LOSE)
+                : (myColor === 2 ? MSG_YOUR_WIN : MSG_YOUR_LOSE);
               showResultDialogText(text, false);
             } else {
-              showResultDialogText('対局が終了しました', false);
+              showResultDialogText(MSG_GAME_FINISHED, false);
             }
           }
           drawBoard();

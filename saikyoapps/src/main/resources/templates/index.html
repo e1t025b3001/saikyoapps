@@ -3,15 +3,14 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title th:text="${i18n_title}"></title>
+  <title th:text="#{home.title}">SaikyoApps</title>
   <link rel="stylesheet" th:href="@{/css/main.css}" />
   <link rel="stylesheet" th:href="@{/css/index.css}" />
 </head>
 
 <body data-page="index">
-  <!-- ゲーム選択セクションを追加 -->
-  <section class="container section-center">
-    <h2 th:text="#{home.games.select}">ゲームを選択してください</h2>
+  <div class="container section-center">
+    <h1 th:text="#{home.games.select}">ゲーム一覧</h1>
     <div id="game-buttons">
       <a th:href="@{/matching(game='marubatsu')}" class="game-btn" data-game="marubatsu"
         th:text="#{home.games.marubatu}">マルバツ</a>
@@ -21,116 +20,133 @@
         th:text="#{home.games.Othello}">オセロ</a>
       <a th:href="@{/matching(game='shinkeisuijaku')}" class="game-btn" data-game="shinkeisuijaku"
         th:text="#{home.games.memory-game}">神経衰弱</a>
-      <a th:href="@{/matching(game='uno')}" class="game-btn" data-game="uno">UNO</a>
-      <a th:href="@{/matching(game='darour')}" class="game-btn" data-game="darour">大老二</a>
+      <a th:href="@{/matching(game='uno')}" class="game-btn" data-game="uno" th:text="#{home.games.uno}">UNO</a>
+      <a th:href="@{/matching(game='dairo')}" class="game-btn" data-game="dairo" th:text="#{home.games.dairo}">大老二</a>
     </div>
 
     <div id="game-actions" style="margin-top:16px; display:flex; gap:8px; justify-content:center;">
-      <!-- マッチング開始 -->
-      <button id="start-matching-btn" class="btn primary" th:text="#{home.match.start}">マッチング開始</button>
-      <!-- 観戦（五目並べ）: 五目並べ選択時のみ表示 -->
-      <button id="spectate-gomoku-btn" type="button" style="display:none;margin-left:8px;"
-        class="btn primary">観戦（五目並べ）</button>
+      <button id="start-matching-btn" class="btn primary" th:text="#{home.match.start}">マッチング</button>
+      <button id="spectate-btn" class="btn" style="display:none;" th:text="#{home.match.spectate}">観戦</button>
     </div>
-    </div>
+  </div>
 
-    <script>
-      (function () {
-        const gameButtons = document.querySelectorAll('.game-btn');
-        const startBtn = document.getElementById('start-matching-btn');
-        const spectateBtn = document.getElementById('spectate-gomoku-btn');
-        let selectedGame = null;
-
-        // どのゲームが観戦をサポートするか
-        const spectateSupportedGames = ['gomoku'];
-
-        function clearSelectionStyles() {
-          gameButtons.forEach(b => {
-            b.style.backgroundColor = '';
-            b.style.border = '';
-          });
-        }
-
-        function updateSpectateButtonVisibility() {
-          if (!spectateBtn) return;
-          spectateBtn.style.display = spectateSupportedGames.includes(selectedGame) ? '' : 'none';
-        }
-
-        gameButtons.forEach(btn => {
-          btn.addEventListener('click', function (e) {
-            // prevent immediate navigation so user can select and then choose action
-            e.preventDefault();
-            selectedGame = btn.getAttribute('data-game');
-            clearSelectionStyles();
-            btn.style.backgroundColor = '#cce5ff';
-            btn.style.border = '1px solid #004085';
-            updateSpectateButtonVisibility();
-          });
-        });
-
-        if (startBtn) {
-          startBtn.addEventListener('click', function () {
-            if (!selectedGame) {
-              alert('ゲームを選択してください。');
-              return;
-            }
-            const url = '/matching?game=' + encodeURIComponent(selectedGame);
-            window.location.href = url;
-          });
-        }
-
-        if (spectateBtn) {
-          spectateBtn.addEventListener('click', function () {
-            if (!selectedGame) { alert('先にゲームを選択してください。'); return; }
-            if (!spectateSupportedGames.includes(selectedGame)) { alert('このゲームは観戦できません。'); return; }
-            const url = '/' + encodeURIComponent(selectedGame) + '/spectate';
-            window.location.href = url;
-          });
-        }
-
-        // 初期表示
-        updateSpectateButtonVisibility();
-      })();
-    </script>
-
-    <form th:action="@{/logout}" method="post">
+  <!-- 插入：語言切換表單（i18n） -->
+  <div class="container section-center" style="margin-top:8px;">
+    <form th:action="@{/api/i18n}" method="post" id="i18n-form" style="display:inline-block;">
+      <!-- CSRF token for Spring Security POST protection -->
       <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-      <button type="submit" th:text="#{home.match.logout}">ログアウト</button>
-    </form>
 
-    <form th:action="@{/i18n}" method="post" id="i18n-form">
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-      <input id="radio1" type="radio" name="i18n" value="ja" th:checked="${i18n == 'ja'}" />
-      <label for="radio1">日本語</label>
-      <input id="radio2" type="radio" name="i18n" value="zh_TW" th:checked="${i18n == 'zh_TW'}" />
-      <label for="radio2">中国語(繁體字)</label>
-      <button type="submit" id="save-i18n-btn" style="display:none;">保存</button>
+      <label>
+        <input id="radio1" type="radio" name="i18n" value="ja" th:checked="${i18n == 'ja'}" /> 日本語
+      </label>
+      <label>
+        <input id="radio2" type="radio" name="i18n" value="zh_TW" th:checked="${i18n == 'zh_TW'}" /> 繁體中文
+      </label>
+      <label>
+        <input id="radio3" type="radio" name="i18n" value="en" th:checked="${i18n == 'en'}" /> English
+      </label>
+      <button type="submit" id="save-i18n-btn" style="display:none;" class="btn">保存</button>
     </form>
-
     <div id="i18n-root" th:attr="data-current=${i18n}" style="display:none"></div>
 
-    <script th:inline="javascript">
-      /*<![CDATA[*/
-      (function () {
-        const form = document.getElementById('i18n-form');
-        const saveBtn = document.getElementById('save-i18n-btn');
-        const radios = Array.from(form.querySelectorAll('input[type="radio"][name="i18n"]'));
-        const current = document.getElementById('i18n-root').dataset.current || 'ja';
+    <!-- NOTE: removed auto-submit; user should click 保存 to apply. The save button visibility is handled by the existing script below. -->
+  </div>
 
-        function updateSaveVisibility() {
-          const selected = radios.find(r => r.checked).value;
-          if (selected !== current) {
-            saveBtn.style.display = '';
-          } else {
-            saveBtn.style.display = 'none';
-          }
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const MSG_PLEASE_SELECT_GAME = /*[[#{alert.selectgame}]]*/ 'ゲームを選択してください。';
+    const MSG_SELECT_FIRST = /*[[#{alert.selectFirst}]]*/ '先にゲームを選択してください。';
+    const MSG_CANNOT_SPECTATE = /*[[#{alert.cannotSpectate}]]*/ 'このゲームは観戦できません。';
+    /*]]>*/
+  </script>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    (function () {
+      const form = document.getElementById('i18n-form');
+      if (!form) return;
+      const saveBtn = document.getElementById('save-i18n-btn');
+      const radios = Array.from(form.querySelectorAll('input[type="radio"][name="i18n"]'));
+      const current = document.getElementById('i18n-root') ? document.getElementById('i18n-root').dataset.current || 'ja' : 'ja';
+
+      function updateSaveVisibility() {
+        const selected = radios.find(r => r.checked).value;
+        if (selected !== current) {
+          saveBtn.style.display = '';
+        } else {
+          saveBtn.style.display = 'none';
         }
+      }
 
-        radios.forEach(r => r.addEventListener('change', updateSaveVisibility));
-        updateSaveVisibility();
-      })();
-      /*]]>*/
-    </script>
+      radios.forEach(r => r.addEventListener('change', updateSaveVisibility));
+      updateSaveVisibility();
+    })();
+    /*]]>*/
+  </script>
+
+  <script>
+    (function () {
+      const gameButtons = document.querySelectorAll('.game-btn');
+      const startBtn = document.getElementById('start-matching-btn');
+      const spectateBtn = document.getElementById('spectate-btn');
+      let selectedGame = null;
+
+      // 観戦をサポートするゲーム
+      const spectateSupportedGames = ['gomoku', 'marubatsu', 'othello', 'shinkeisuijaku', 'uno', 'dairo'];
+
+      function clearSelectionStyles() {
+        gameButtons.forEach(b => {
+          b.style.backgroundColor = '';
+          b.style.border = '';
+        });
+      }
+
+      function updateSpectateButtonVisibility() {
+        if (!spectateBtn) return;
+        spectateBtn.style.display = spectateSupportedGames.includes(selectedGame) ? '' : 'none';
+      }
+
+      gameButtons.forEach(btn => {
+        btn.addEventListener('click', function (e) {
+          // prevent immediate navigation so user can select and then choose action
+          e.preventDefault();
+          selectedGame = btn.getAttribute('data-game');
+          clearSelectionStyles();
+          btn.style.backgroundColor = '#cce5ff';
+          btn.style.border = '1px solid #004085';
+          updateSpectateButtonVisibility();
+        });
+      });
+
+      if (startBtn) {
+        startBtn.addEventListener('click', function () {
+          if (!selectedGame) {
+            alert(MSG_PLEASE_SELECT_GAME);
+            return;
+          }
+          const url = '/matching?game=' + encodeURIComponent(selectedGame);
+          window.location.href = url;
+        });
+      }
+
+      if (spectateBtn) {
+        spectateBtn.addEventListener('click', function () {
+          if (!selectedGame) { alert(MSG_SELECT_FIRST); return; }
+          if (!spectateSupportedGames.includes(selectedGame)) { alert(MSG_CANNOT_SPECTATE); return; }
+          const url = '/' + encodeURIComponent(selectedGame) + '/spectate';
+          window.location.href = url;
+        });
+      }
+
+      // 初期表示
+      updateSpectateButtonVisibility();
+    })();
+  </script>
+
+  <form th:action="@{/logout}" method="post">
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+    <button type="submit" th:text="#{home.match.logout}">ログアウト</button>
+  </form>
 
 </body>
 

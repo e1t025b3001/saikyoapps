@@ -10,22 +10,28 @@
 
 <body data-page="matching">
   <div class="container section-center">
-    <h1>マッチング中</h1>
+    <h1 th:text="#{match.middle}">マッチング中</h1>
 
     <div id="matching-hero" class="card">
-      <p class="matching-count" th:text="#{match.waiting}">現在の待機人数: </p><span id="waitingCount"></span>
+      <!-- 顯示等待提示與數字，waiting-count 要與 JS 中的 id 相符 -->
+      <p class="matching-count" th:text="#{match.waiting}">対戦相手を探しています... <span id="waiting-count">0</span></p>
       <div id="matching-progress"><i></i></div>
     </div>
 
-    <p th:text="#{match.user(${username})}">ユーザー: guest</p>
-    <p th:text="#{match.selectedGame(${game})}">選択ゲーム: </p>
+    <!-- 顯示使用者與所選遊戲資訊 -->
+    <div class="card">
+      <p><span th:text="#{match.user}">ユーザー</span>: <span th:text="${username}">guest</span></p>
+      <p><span th:text="#{match.selectedGame}">選択ゲーム</span>: <span th:text="${game}">game</span></p>
 
-    <!-- 取消配對按鈕 -->
-    <form th:action="@{/match/leave}" method="post">
-      <input type="hidden" name="game" th:value="${game}" />
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-      <button type="submit" th:text="#{match.cancel}" class="btn">キャンセル</button>
-    </form>
+      <!-- 取消配對按鈕 -->
+      <form th:action="@{/match/leave}" method="post">
+        <input type="hidden" name="game" th:value="${game}" />
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <button type="submit" th:text="#{match.cancel}" class="btn">キャンセル</button>
+      </form>
+
+      <a th:href="@{/}" class="btn" th:text="#{match.return.selectgame}">戻る</a>
+    </div>
   </div>
 
   <script th:inline="javascript">
