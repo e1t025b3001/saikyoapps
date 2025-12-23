@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS darour_game (
   player1 VARCHAR(255),
   player2 VARCHAR(255),
   player3 VARCHAR(255),
-  game_state VARCHAR(32),
+  game_state VARCHAR(32)
 )
 
 -- darour 用のテーブルここまで --
