@@ -10,16 +10,22 @@
 
 <body data-page="matching">
   <div class="container section-center">
-    <h1>マッチング</h1>
+    <h1>マッチング中</h1>
+
     <div id="matching-hero" class="card">
-      <p class="matching-count">現在の待機人数: <span th:text="${waitingCount}">0</span></p>
+      <p class="matching-count" th:text="#{match.waiting}">現在の待機人数: </p><span id="waitingCount"></span>
       <div id="matching-progress"><i></i></div>
     </div>
 
-    <div>
-      <p>ゲーム選択: <span th:text="${game}">game</span></p>
-      <a th:href="@{/}" class="btn">戻る</a>
-    </div>
+    <p th:text="#{match.user(${username})}">ユーザー: guest</p>
+    <p th:text="#{match.selectedGame(${game})}">選択ゲーム: </p>
+
+    <!-- 取消配對按鈕 -->
+    <form th:action="@{/match/leave}" method="post">
+      <input type="hidden" name="game" th:value="${game}" />
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <button type="submit" th:text="#{match.cancel}" class="btn">キャンセル</button>
+    </form>
   </div>
 
   <script th:inline="javascript">
