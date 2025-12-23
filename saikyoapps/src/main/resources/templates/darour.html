@@ -11,6 +11,12 @@
 
   <p>大老二のゲーム画面です。（ダミー画面）</p>
 
+  <th:block th:if="${player1 != null && player2 != null && player3 != null}">
+    <h2>プレイヤー1: [[${player1}]]</h2>
+    <h2>プレイヤー2: [[${player2}]]</h2>
+    <h2>プレイヤー3: [[${player3}]]</h2>
+  </th:block>
+
   <!-- Handクラスがmodel内にhandとして入っているはず -->
   <th:block th:if="${hand != null}">
     <h2>あなたの手札: [[${hand.toString()}]]</h2>
