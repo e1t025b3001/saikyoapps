@@ -21,8 +21,9 @@
         th:text="#{home.games.Othello}">オセロ</a>
       <a th:href="@{/matching(game='shinkeisuijaku')}" class="game-btn" data-game="shinkeisuijaku"
         th:text="#{home.games.memory-game}">神経衰弱</a>
-      <a th:href="@{/matching(game='uno')}" class="game-btn" data-game="uno">UNO</a>
-      <a th:href="@{/matching(game='darour')}" class="game-btn" data-game="darour">大老二</a>
+      <a th:href="@{/matching(game='uno')}" class="game-btn" data-game="uno" th:text="#{home.games.uno}">UNO</a>
+      <a th:href="@{/matching(game='darour')}" class="game-btn" data-game="darour"
+        th:text="#{home.games.darour}">大老二</a>
     </div>
 
     <div id="game-actions" style="margin-top:16px; display:flex; gap:8px; justify-content:center;">
@@ -104,6 +105,8 @@
       <label for="radio1">日本語</label>
       <input id="radio2" type="radio" name="i18n" value="zh_TW" th:checked="${i18n == 'zh_TW'}" />
       <label for="radio2">中国語(繁體字)</label>
+      <input id="radio3" type="radio" name="i18n" value="en" th:checked="${i18n == 'en'}" />
+      <label for="radio3">English</label>
       <button type="submit" id="save-i18n-btn" style="display:none;">保存</button>
     </form>
 
