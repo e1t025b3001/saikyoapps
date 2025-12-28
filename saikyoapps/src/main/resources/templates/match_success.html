@@ -3,51 +3,60 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>マッチング成功</title>
+  <title th:text="#{title.match_success}">マッチング成功</title>
 </head>
 
 <body>
-  <h1 th:text="#{match.success}">マッチング成功！まもなくゲーム画面に移動します。</h1>
-  <p th:text="#{match.game(${game})}">ゲーム</p>
+  <div th:with="gameLabel=${#messages.msg('home.games.' + game)}">
+    <h1 th:text="#{match.success}">マッチング成功！まもなくゲーム画面に移動します。</h1>
+    <!-- 如果 game 參數為 marubatsu（注意 properties 使用的是 key 'marubatu'），使用專屬分支，其他遊戲採用一般 lookup -->
+    <p>
+      <span th:switch="${game}">
+        <span th:case="'marubatsu'" th:text="${#messages.msg('match.game', #messages.msg('home.games.marubatu'))}">遊戲:
+          圈圈叉叉</span>
+        <span th:case="*" th:text="${#messages.msg('match.game', #messages.msg('home.games.' + game))}">ゲーム</span>
+      </span>
+    </p>
 
-  <!-- hidden inputs を使ってサーバ側からの値を JS で安全に取得する -->
-  <input type="hidden" id="gameInput" th:value="${game}" />
-  <input type="hidden" id="matchIdInput" th:value="${matchId}" />
+    <!-- hidden inputs を使ってサーバ側からの値を JS で安全に取得する -->
+    <input type="hidden" id="gameInput" th:value="${game}" />
+    <input type="hidden" id="matchIdInput" th:value="${matchId}" />
 
-  <script>
-    (function () {
-      // hidden input から安全に値を取得
-      const gameEl = document.getElementById('gameInput');
-      const matchEl = document.getElementById('matchIdInput');
-      const game = gameEl ? gameEl.value : 'marubatsu';
-      let matchId = matchEl ? matchEl.value : null;
+    <script>
+      (function () {
+        // hidden input から安全に値を取得
+        const gameEl = document.getElementById('gameInput');
+        const matchEl = document.getElementById('matchIdInput');
+        const game = gameEl ? gameEl.value : 'marubatsu';
+        let matchId = matchEl ? matchEl.value : null;
 
-      // 如果沒有 matchId，嘗試透過 matching/status 取得一次 gameId，再 redirect
-      async function resolveAndRedirect() {
-        if (!matchId) {
-          try {
-            const resp = await fetch('/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' });
-            if (resp.ok) {
-              const j = await resp.json();
-              if (j && j.status === 'playing' && j.gameId) {
-                matchId = j.gameId;
+        // 如果沒有 matchId，嘗試透過 matching/status 取得一次 gameId，再 redirect
+        async function resolveAndRedirect() {
+          if (!matchId) {
+            try {
+              const resp = await fetch('/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' });
+              if (resp.ok) {
+                const j = await resp.json();
+                if (j && j.status === 'playing' && j.gameId) {
+                  matchId = j.gameId;
+                }
               }
+            } catch (e) {
+              console.warn('Failed to fetch matching/status for redirect', e);
             }
-          } catch (e) {
-            console.warn('Failed to fetch matching/status for redirect', e);
           }
+
+          let url = '/' + encodeURIComponent(game);
+          if (matchId) url += '?matchId=' + encodeURIComponent(matchId);
+          window.location.href = url;
         }
 
-        let url = '/' + encodeURIComponent(game);
-        if (matchId) url += '?matchId=' + encodeURIComponent(matchId);
-        window.location.href = url;
-      }
+        setTimeout(resolveAndRedirect, 1200);
+      })();
+    </script>
 
-      setTimeout(resolveAndRedirect, 1200);
-    })();
-  </script>
-
-  <a th:href="@{/}" th:text="#{match.return.selectgame}">ゲーム選択に戻る</a>
+    <a th:href="@{/}" th:text="#{match.return.selectgame}">ゲーム選択に戻る</a>
+  </div>
 </body>
 
 </html>

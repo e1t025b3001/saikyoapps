@@ -3,17 +3,17 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>対局結果</title>
+  <title th:text="#{match_result.title}">対局結果</title>
   <link rel="stylesheet" th:href="@{/css/main.css}" />
 </head>
 
 <body data-page="match_result">
   <div class="container section-center">
-    <h1>対局結果</h1>
+    <h1 th:text="#{match_result.title}">対局結果</h1>
     <div class="card">
-      <p>勝者: <span th:text="${winner}">winner</span></p>
-      <p>敗者: <span th:text="${loser}">loser</span></p>
-      <a th:href="@{/}" class="btn">ゲーム一覧に戻る</a>
+      <p th:text="#{match_result.winner(${winner})}">勝者: <span th:text="${winner}">winner</span></p>
+      <p th:text="#{match_result.loser(${loser})}">敗者: <span th:text="${loser}">loser</span></p>
+      <a th:href="@{/}" class="btn" th:text="#{match.return.selectgame}">ゲーム一覧に戻る</a>
     </div>
   </div>
 </body>

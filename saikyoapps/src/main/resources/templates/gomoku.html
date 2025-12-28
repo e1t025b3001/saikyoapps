@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>五目並べ（Gomoku）</title>
+  <title th:text="#{title.gomoku}">五目並べ（Gomoku）</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -67,8 +67,31 @@
   </style>
 </head>
 
-<body th:attr="data-game=${game}">
-  <h1 style="text-align:center;">五目並べ</h1>
+<body>
+  <!-- I18N: server-rendered messages made available to client JS -->
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const I18N = {
+      game: /*[[${game}]]*/ 'gomoku',
+      spectateLabel: /*[[#{spectate.spectating}]]*/ 'Spectating...',
+      turnYour: /*[[#{turn.your}]]*/ 'Your turn',
+      turnOpponent: /*[[#{turn.opponent}]]*/ 'Opponent\'s turn',
+      spectateBannerLabel: /*[[#{spectate.label}]]*/ 'Spectating:',
+      spectateBlack: /*[[#{spectate.black}]]*/ '(Black)',
+      spectateWhite: /*[[#{spectate.white}]]*/ '(White)',
+      spectateGameIdLabel: /*[[#{spectate.gameIdLabel}]]*/ ' / GAME_ID=',
+      gameNotStarted: /*[[#{alert.gameNotStarted}]]*/ 'Game not started yet',
+      confirmForfeit: /*[[#{confirm.surrender}]]*/ 'Are you sure to forfeit and return to lobby?',
+      resultWinYou: /*[[#{result.win.you}]]*/ 'You win!',
+      resultLoseYou: /*[[#{result.lose.you}]]*/ 'You lose...',
+      resultFinished: /*[[#{result.finished}]]*/ 'The game has finished',
+      resultFinishedLobby: /*[[#{result.finished.lobby}]]*/ 'The game has finished (returning to lobby)',
+      resultReturnBtn: /*[[#{button.confirm_and_return}]]*/ 'Confirm and return'
+    };
+    /*]]>*/
+  </script>
+
+  <h1 style="text-align:center;" th:text="#{title.gomoku}">五目並べ</h1>
 
   <div id="spectateBanner" class="spectateBanner"></div>
 
@@ -77,7 +100,7 @@
   </div>
 
   <div id="surrenderWrap" style="text-align:center;margin-top:8px;">
-    <button id="surrenderBtn">投降</button>
+    <button id="surrenderBtn" th:text="#{button.surrender}">投降</button>
   </div>
 
   <!-- 勝敗確認ダイアログ -->
@@ -85,14 +108,14 @@
     style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
     <div style="background:#fff;padding:16px;border-radius:6px;width:320px;margin:120px auto;text-align:center;">
       <div id="resultDialogText" style="margin-bottom:12px;font-weight:bold;color:#b00;"></div>
-      <button id="resultConfirmBtn">確認並返回大廳</button>
+      <button id="resultConfirmBtn" th:text="#{button.confirm_and_return}">確認並返回大廳</button>
     </div>
   </div>
 
   <div id="boardWrap">
     <canvas id="gomokuBoard" width="600" height="600"></canvas>
     <div id="info">
-      <div id="turnInfo">等待中...</div>
+      <div id="turnInfo" th:text="#{game.waiting}">等待中...</div>
       <div id="result" style="color:darkred;font-weight:bold;"></div>
     </div>
   </div>
@@ -103,6 +126,17 @@
     /*]]>*/
 
     (function () {
+      // 取得本地化字串（由 server 提供在 body 的 data-attributes）
+      const body = document.body;
+      const MSG = {
+        gameNotStarted: body.getAttribute('data-game-not-started') || 'Game not started yet',
+        confirmForfeit: body.getAttribute('data-confirm-forfeit') || 'Are you sure to forfeit and return to lobby?',
+        resultWinYou: body.getAttribute('data-result-win-you') || 'You win!',
+        resultLoseYou: body.getAttribute('data-result-lose-you') || 'You lose...',
+        resultFinished: body.getAttribute('data-result-finished') || 'The game has finished',
+        resultFinishedLobby: body.getAttribute('data-result-finished-lobby') || 'The game has finished (returning to lobby)'
+      };
+
       // 簡潔版 Gomoku 前端
       const origin = window.location.origin;
       const size = 15;
@@ -176,10 +210,10 @@
         const el = document.getElementById('turnInfo');
         if (finished) return;
         if (!myColor) {
-          el.textContent = '観戦中...';
+          el.textContent = I18N.spectateLabel || 'Spectating...';
           return;
         }
-        el.textContent = currentTurn === myColor ? 'あなたの番' : '相手の番';
+        el.textContent = currentTurn === myColor ? (I18N.turnYour || 'Your turn') : (I18N.turnOpponent || 'Opponent\'s turn');
       }
 
       function showResultText(t) {
@@ -235,7 +269,7 @@
 
         const pb = playerBlack || '?';
         const pw = playerWhite || '?';
-        banner.textContent = `観戦中: ${pb}（黒） vs ${pw}（白） / GAME_ID=${gameId}`;
+        banner.textContent = (I18N.spectateBannerLabel || 'Spectating:') + ` ${pb}${I18N.spectateBlack || '(Black)'} vs ${pw}${I18N.spectateWhite || '(White)'}${I18N.spectateGameIdLabel || ' / GAME_ID='}${gameId}`;
         banner.style.display = 'block';
       }
 
@@ -294,11 +328,11 @@
               showFinishedDialogForSpectator(j);
             } else if (j.winner) {
               const text = (j.winner === 'black')
-                ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
-                : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+                ? (myColor === 1 ? I18N.resultWinYou : I18N.resultLoseYou)
+                : (myColor === 2 ? I18N.resultWinYou : I18N.resultLoseYou);
               showResultDialogText(text, false);
             } else {
-              showResultDialogText('対局が終了しました', false);
+              showResultDialogText(MSG.resultFinished, false);
             }
           }
           drawBoard();
@@ -355,8 +389,8 @@
             }
             if (j.finished && myColor) {
               const text = (j.winner === 'black')
-                ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
-                : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+                ? (myColor === 1 ? I18N.resultWinYou : I18N.resultLoseYou)
+                : (myColor === 2 ? I18N.resultWinYou : I18N.resultLoseYou);
               showResultDialogText(text, false);
             }
           }).catch(e => { console.error('initial game fetch', e); finishFallback(); });
@@ -384,8 +418,8 @@
                   showFinishedDialogForSpectator(j);
                 } else {
                   const text = (j.winner === 'black')
-                    ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
-                    : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+                    ? (myColor === 1 ? I18N.resultWinYou : I18N.resultLoseYou)
+                    : (myColor === 2 ? I18N.resultWinYou : I18N.resultLoseYou);
                   showResultDialogText(text, false);
                 }
               }
@@ -394,16 +428,16 @@
       }
 
       document.getElementById('surrenderBtn').addEventListener('click', function () {
-        if (!gameId) return alert('ゲームがまだ開始していません');
-        if (!confirm('投降してロビーへ戻りますか？')) return;
+        if (!gameId) return alert(I18N.gameNotStarted || 'Game not started yet');
+        if (!confirm(I18N.confirmForfeit || 'Are you sure to forfeit and return to lobby?')) return;
         fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '/forfeit', { method: 'POST', credentials: 'include' })
           .then(resp => {
             if (!resp.ok) { finishFallback(); return; }
             const j = resp.json || {};
             const winner = j.winner;
             const text = (winner === 'black')
-              ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
-              : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+              ? (myColor === 1 ? I18N.resultWinYou : I18N.resultLoseYou)
+              : (myColor === 2 ? I18N.resultWinYou : I18N.resultLoseYou);
             showResultDialogText(text, false);
           }).catch(e => { console.error('forfeit error', e); finishFallback(); });
       });

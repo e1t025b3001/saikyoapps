@@ -3,13 +3,13 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>大老二</title>
+  <title th:text="#{title.darour}">大老二</title>
 </head>
 
 <body>
   <h1 th:text="'ようこそ ' + ${username} + ' さん'">ようこそ</h1>
 
-  <p>大老二のゲーム画面です。（ダミー画面）</p>
+  <p th:text="#{title.darour}">大老二のゲーム画面です。（ダミー画面）</p>
 
   <!-- Handクラスがmodel内にhandとして入っているはず -->
   <th:block th:if="${hand != null}">
@@ -17,7 +17,7 @@
   </th:block>
 
 
-  <a th:href="@{/}">戻る</a>
+  <a th:href="@{/}" th:text="#{button.return}">戻る</a>
 </body>
 
 </html>
