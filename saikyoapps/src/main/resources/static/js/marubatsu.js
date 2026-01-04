@@ -29,6 +29,26 @@
   let pollInterval = 1500;
   let pollTimer = null;
 
+  // soundManager とコントロール断片を動的に挿入しておく（ページ側で未読み込みの場合に備える）
+  (function insertSoundScripts() {
+    try {
+      const sm = document.createElement('script');
+      sm.src = '/js/soundManager.js';
+      sm.defer = true;
+      sm.onload = function () {
+        try { if (window.soundManager && !window.soundManager._initialized) window.soundManager.init().catch(e => console.warn('soundManager init failed', e)); } catch (e) { }
+      };
+      document.head.appendChild(sm);
+
+      // sound_controls フラグメントを静的リソースとして挿入（存在すれば表示）
+      fetch('/fragments/sound_controls.html', { cache: 'no-store' }).then(r => r.text()).then(html => {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        document.body.appendChild(div);
+      }).catch(() => { /* 無視 */ });
+    } catch (e) { console.warn('insertSoundScripts error', e); }
+  })();
+
   // 安全的 fetch，會回傳 {ok, status, text, json}
   async function fetchSafe(url, opts) {
     const res = await fetch(url, Object.assign({ credentials: 'include' }, opts || {}));
@@ -130,6 +150,17 @@
     const idx = r * 3 + c;
     cell.classList.add('disabled');
     sendMove(idx);
+
+    // 効果音再生: ユーザー操作のため直接再生を試みる（soundManager 未ロード時はファイル直再生でフォールバック）
+    try {
+      if (window.soundManager) {
+        // マニフェストキーは marubatsu_place とする
+        window.soundManager.play('marubatsu_place').catch(() => { /* ignore */ });
+      } else {
+        // soundManager がまだロードされていない場合、直接 Audio を使って再生を試みる
+        try { new Audio('/sounds/marubatsu/sfx_place.ogg').play().catch(() => { }); } catch (e) { }
+      }
+    } catch (e) { console.warn('play sound fallback error', e); }
   }
 
   cells.forEach(cell => cell.addEventListener('click', onCellClick));
