@@ -1,0 +1,15 @@
+{
+  "place": {
+    "files": [
+      "/sounds/gomoku/sfx_place.ogg"
+    ],
+    "volume": 1.0,
+    "preload": true
+  },
+  "win": {
+    "files": [
+      "/sounds/gomoku/sfx_win.ogg"
+    ],
+    "volume": 1.0
+  }
+}

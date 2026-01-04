@@ -303,6 +303,8 @@
           }
           drawBoard();
           updateTurnText();
+          // 効果音再生: 自分の手を置いたときにプレース音を鳴らす
+          try { if (window.soundManager) window.soundManager.play('place'); } catch (e) { console.warn('sound play error', e); }
         }).catch(err => { console.error('move error', err); finishFallback(); }).finally(() => { canvas.style.pointerEvents = ''; });
       });
 
@@ -420,6 +422,30 @@
         startMatchPoll();
       }
 
+      // sound fragment を挿入: script で soundManager を読み込み
+      (function insertSoundScripts() {
+        // soundManager.js を読み込む
+        const sm = document.createElement('script');
+        sm.src = '/js/soundManager.js';
+        sm.defer = true;
+        document.body.appendChild(sm);
+
+        // sound controls fragment を読み込む via fetch
+        const insertFragment = function () {
+          fetch('/fragments/sound_controls.html').then(r => r.text()).then(html => {
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            document.body.appendChild(div);
+          }).catch(e => {
+            // fallback: try to load from templates path
+            console.warn('failed to insert sound controls fragment', e);
+          });
+        };
+
+        // DOMContentLoaded 後に挿入
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', insertFragment);
+        else insertFragment();
+      })();
     })();
   </script>
 </body>
