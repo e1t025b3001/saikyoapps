@@ -4,22 +4,29 @@
 <head>
   <meta charset="UTF-8" />
   <title>マッチング</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}" />
+  <link rel="stylesheet" th:href="@{/css/matching.css}" />
 </head>
 
-<body>
-  <h1>マッチング中</h1>
+<body data-page="matching">
+  <div class="container section-center">
+    <h1>マッチング中</h1>
 
-  <p th:text="'ユーザー: ' + ${username}">ユーザー: guest</p>
-  <p th:text="'選択ゲーム: ' + ${game}">選択ゲーム: ー</p>
+    <div id="matching-hero" class="card">
+      <p class="matching-count" th:text="#{match.waiting}">現在の待機人数: </p><span id="waiting-count"></span>
+      <div id="matching-progress"><i></i></div>
+    </div>
 
-  <p id="waiting-text">対戦相手を探しています…（<span id="waiting-count">0</span>）</p>
+    <p th:text="#{match.user(${username})}">ユーザー: guest</p>
+    <p th:text="#{match.selectedGame(${game})}">選択ゲーム: </p>
 
-  <!-- 取消配對按鈕 -->
-  <form th:action="@{/match/leave}" method="post">
-    <input type="hidden" name="game" th:value="${game}" />
-    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-    <button type="submit">取消配對 / 返回上一頁</button>
-  </form>
+    <!-- 取消配對按鈕 -->
+    <form th:action="@{/match/leave}" method="post">
+      <input type="hidden" name="game" th:value="${game}" />
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+      <button type="submit" th:text="#{match.cancel}" class="btn">キャンセル</button>
+    </form>
+  </div>
 
   <script th:inline="javascript">
     /*<![CDATA[*/
@@ -48,7 +55,6 @@
 
             // 只在玩家狀態變為 playing 且 currentGame 與目前選擇遊戲一致時視為配對成功
             if (status === 'playing' && currentGame === selectedGame) {
-              // 従来の動作：match_success へ遷移させる
               window.location.href = '/match_success?game=' + encodeURIComponent(selectedGame);
             }
           })

@@ -54,19 +54,32 @@
       margin: 120px auto;
       text-align: center;
     }
+
+    .spectateBanner {
+      max-width: 600px;
+      margin: 10px auto 0;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      background: #fafafa;
+      color: #333;
+      display: none;
+    }
   </style>
 </head>
 
 <body th:attr="data-game=${game}">
   <h1 style="text-align:center;">五目並べ</h1>
 
+  <div id="spectateBanner" class="spectateBanner"></div>
+
   <div id="controls">
     <input type="hidden" id="pageGame" th:value="${game}" />
   </div>
 
-  <div style="text-align:center;margin-top:8px;">
+  <div id="surrenderWrap" style="text-align:center;margin-top:8px;">
     <button id="surrenderBtn">投降</button>
   </div>
+
   <!-- 勝敗確認ダイアログ -->
   <div id="resultDialog"
     style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
@@ -90,7 +103,7 @@
     /*]]>*/
 
     (function () {
-      // 簡潔版 Gomoku 前端，參考 tictactoe.js 的結構
+      // 簡潔版 Gomoku 前端
       const origin = window.location.origin;
       const size = 15;
       const canvas = document.getElementById('gomokuBoard');
@@ -112,6 +125,10 @@
       let gameId = null;
       let matchTimer = null;
       let gameTimer = null;
+
+      let playerBlack = null;
+      let playerWhite = null;
+      let lastFinishedShown = false;
 
       function drawBoard() {
         ctx.clearRect(0, 0, cssW, cssH);
@@ -159,20 +176,19 @@
         const el = document.getElementById('turnInfo');
         if (finished) return;
         if (!myColor) {
-          el.textContent = '已開始遊戲，等待伺服器分配顏色與回合資訊...';
+          el.textContent = '観戦中...';
           return;
         }
-        el.textContent = currentTurn === myColor ? '你的回合' : '對手的回合';
+        el.textContent = currentTurn === myColor ? 'あなたの番' : '相手の番';
       }
 
       function showResultText(t) {
         document.getElementById('result').textContent = t;
       }
 
-      // 顯示勝敗對話框的共用函式，會停用輪詢並在 10 秒後自動返回大廳
-      function showResultDialogText(text) {
+      // 結果ダイアログ（共通）
+      function showResultDialogText(text, backToSpectate) {
         finished = true;
-        // 停用輪詢
         if (matchTimer) { clearInterval(matchTimer); matchTimer = null; }
         if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
         const dlgText = document.getElementById('resultDialogText');
@@ -180,38 +196,72 @@
         const dlg = document.getElementById('resultDialog');
         dlg.style.display = 'block';
         const confirmBtn = document.getElementById('resultConfirmBtn');
-        confirmBtn.onclick = function () { location.href = '/'; };
-        setTimeout(() => { if (dlg.style.display !== 'none') location.href = '/'; }, 10000);
+        confirmBtn.onclick = function () {
+          location.href = backToSpectate ? '/gomoku/spectate' : '/';
+        };
+        setTimeout(() => {
+          if (dlg.style.display !== 'none') {
+            location.href = backToSpectate ? '/gomoku/spectate' : '/';
+          }
+        }, 10000);
       }
 
-      // 安全的 fetch，回傳 {ok, status, json}
+      // 安全な fetch。{ok, status, json} を返す
       function fetchSafe(url, opts) {
         return fetch(url, opts).then(res => {
           const status = res.status;
-          if (res.headers.get('content-type') && res.headers.get('content-type').includes('application/json')) {
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
             return res.json().then(j => ({ ok: res.ok, status: status, json: j }));
           }
           return { ok: res.ok, status: status, json: null };
         });
       }
 
-      // fallback: 當伺服器回 404 或出現無法取得遊戲資訊時，嘗試透過 /matching/status 確認玩家狀態，然後顯示結束對話並返回大廳
+      function getQueryParam(name) {
+        const u = new URL(window.location.href);
+        return u.searchParams.get(name);
+      }
+
+      function updateSpectateBanner() {
+        const banner = document.getElementById('spectateBanner');
+        if (!banner) return;
+
+        const isSpectator = !myColor;
+        if (!isSpectator) {
+          banner.style.display = 'none';
+          return;
+        }
+
+        const pb = playerBlack || '?';
+        const pw = playerWhite || '?';
+        banner.textContent = `観戦中: ${pb}（黒） vs ${pw}（白） / GAME_ID=${gameId}`;
+        banner.style.display = 'block';
+      }
+
+      function showFinishedDialogForSpectator(j) {
+        if (lastFinishedShown) return;
+        lastFinishedShown = true;
+
+        const winSide = j && j.winner ? (j.winner === 'black' ? '黒' : '白') : '不明';
+        showResultDialogText(`対局終了（勝者: ${winSide}）`, true);
+      }
+
+      // fallback: サーバが 404/400 等を返した場合は終了扱いとして戻す
       function finishFallback() {
-        // 停用輪詢
         if (matchTimer) { clearInterval(matchTimer); matchTimer = null; }
         if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
-        // 詢問 matching/status 確認是否已回到 lobby
         fetchSafe(origin + '/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' })
           .then(r => {
-            let text = '對局已結束';
+            let text = '対局が終了しました';
             if (r && r.json) {
               const s = r.json.status;
-              if (s === 'lobby') text = '對局已結束，返回大廳';
+              if (s === 'lobby') text = '対局が終了しました（ロビーへ戻ります）';
             }
-            showResultDialogText(text);
+            showResultDialogText(text, false);
           }).catch(e => {
             console.warn('finishFallback error', e);
-            showResultDialogText('對局已結束');
+            showResultDialogText('対局が終了しました', false);
           });
       }
 
@@ -231,7 +281,6 @@
           body: JSON.stringify({ x: c, y: r })
         }).then(resp => {
           if (!resp.ok) {
-            // 若伺服器回 404 或 400，視為對局已結束或找不到遊戲，使用 fallback
             console.warn('move resp not ok', resp.status);
             finishFallback();
             return;
@@ -241,11 +290,15 @@
           if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
           if (j.finished) {
             finished = true;
-            if (j.winner) {
-              const text = (j.winner === 'black') ? (myColor === 1 ? '你贏了！' : '你輸了...') : (myColor === 2 ? '你贏了！' : '你輸了...');
-              showResultDialogText(text);
+            if (!myColor) {
+              showFinishedDialogForSpectator(j);
+            } else if (j.winner) {
+              const text = (j.winner === 'black')
+                ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
+                : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+              showResultDialogText(text, false);
             } else {
-              showResultDialogText('對局已結束');
+              showResultDialogText('対局が終了しました', false);
             }
           }
           drawBoard();
@@ -253,7 +306,6 @@
         }).catch(err => { console.error('move error', err); finishFallback(); }).finally(() => { canvas.style.pointerEvents = ''; });
       });
 
-      // 輪詢 matching/status，拿到 gameId 後啟動 game 輪詢
       function startMatchPoll() {
         matchTimer = setInterval(() => {
           fetchSafe(origin + '/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' })
@@ -276,7 +328,9 @@
 
       function startGameLoop(gid) {
         gameId = gid;
-        console.log('start game', gid);
+
+        const surrenderWrap = document.getElementById('surrenderWrap');
+
         // 立即取得一次遊戲狀態
         fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId), { cache: 'no-store', credentials: 'include' })
           .then(resp => {
@@ -285,13 +339,28 @@
             if (j.board) board = j.board;
             if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
             if (j.myColor) myColor = (j.myColor === 'black') ? 1 : 2;
-            if (j.finished) {
-              const text = (j.winner === 'black') ? (myColor === 1 ? '你贏了！' : '你輸了...') : (myColor === 2 ? '你贏了！' : '你輸了...');
-              showResultDialogText(text);
-            }
+
+            playerBlack = j.playerBlack || null;
+            playerWhite = j.playerWhite || null;
+            if (j.finished) { finished = true; }
+
+            if (!myColor && surrenderWrap) surrenderWrap.style.display = 'none';
+
             drawBoard();
             updateTurnText();
+            updateSpectateBanner();
+
+            if (j.finished && !myColor) {
+              showFinishedDialogForSpectator(j);
+            }
+            if (j.finished && myColor) {
+              const text = (j.winner === 'black')
+                ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
+                : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+              showResultDialogText(text, false);
+            }
           }).catch(e => { console.error('initial game fetch', e); finishFallback(); });
+
         gameTimer = setInterval(() => {
           fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '?_=' + Date.now(), { cache: 'no-store', credentials: 'include' })
             .then(resp => {
@@ -300,35 +369,56 @@
               if (j.board) board = j.board;
               if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
               if (j.myColor) myColor = (j.myColor === 'black') ? 1 : 2;
+              playerBlack = j.playerBlack || playerBlack;
+              playerWhite = j.playerWhite || playerWhite;
               if (j.finished) { finished = true; }
+
+              if (!myColor && surrenderWrap) surrenderWrap.style.display = 'none';
+
               drawBoard();
               updateTurnText();
+              updateSpectateBanner();
+
               if (j.finished) {
-                const text = (j.winner === 'black') ? (myColor === 1 ? '你贏了！' : '你輸了...') : (myColor === 2 ? '你贏了！' : '你輸了...');
-                showResultDialogText(text);
+                if (!myColor) {
+                  showFinishedDialogForSpectator(j);
+                } else {
+                  const text = (j.winner === 'black')
+                    ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
+                    : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+                  showResultDialogText(text, false);
+                }
               }
             }).catch(e => { console.error('game poll error', e); finishFallback(); });
         }, 1000);
       }
 
-      // 投降按鈕事件
       document.getElementById('surrenderBtn').addEventListener('click', function () {
-        if (!gameId) return alert('遊戲尚未準備好');
-        if (!confirm('確定要投降並返回大廳嗎？')) return;
+        if (!gameId) return alert('ゲームがまだ開始していません');
+        if (!confirm('投降してロビーへ戻りますか？')) return;
         fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '/forfeit', { method: 'POST', credentials: 'include' })
           .then(resp => {
             if (!resp.ok) { finishFallback(); return; }
             const j = resp.json || {};
             const winner = j.winner;
-            const text = (winner === 'black') ? (myColor === 1 ? '你贏了！' : '你輸了...') : (myColor === 2 ? '你贏了！' : '你輸了...');
-            showResultDialogText(text);
+            const text = (winner === 'black')
+              ? (myColor === 1 ? 'あなたの勝ち！' : 'あなたの負け...')
+              : (myColor === 2 ? 'あなたの勝ち！' : 'あなたの負け...');
+            showResultDialogText(text, false);
           }).catch(e => { console.error('forfeit error', e); finishFallback(); });
       });
 
-      // 初始化
+      // 初期化
       drawBoard();
       updateTurnText();
-      startMatchPoll();
+
+      // 観戦モード：URL matchId があれば matching/status を使わずに直接 startGameLoop
+      const directGid = getQueryParam('matchId');
+      if (directGid) {
+        startGameLoop(directGid);
+      } else {
+        startMatchPoll();
+      }
 
     })();
   </script>

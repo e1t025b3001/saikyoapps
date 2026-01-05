@@ -117,7 +117,7 @@ public class MatchingController {
     }
 
     int requiredPlayers = 2;
-    if ("shinkeisuijaku".equals(game) || "uno".equals(game) || "dairo".equals(game)) {
+    if ("shinkeisuijaku".equals(game) || "uno".equals(game) || "darour".equals(game)) {
       requiredPlayers = 3;
     }
 
@@ -402,14 +402,6 @@ public class MatchingController {
     return "uno";
   }
 
-  @GetMapping("/dairo")
-  public String dairo(Model model, Authentication authentication) {
-    if (authentication != null)
-      model.addAttribute("username", authentication.getName());
-    model.addAttribute("game", "dairo");
-    return "dairo";
-  }
-
   // 使用者從匹配或遊戲頁返回 LOBBY 的 API
   @PostMapping("/match/leave")
   public String leaveMatch(@RequestParam(name = "game", required = false) String game, Model model,
@@ -547,5 +539,14 @@ public class MatchingController {
       model.addAttribute("username", "guest");
     }
     return "tictactoe";
+  }
+
+  @GetMapping("/gomoku/spectate")
+  public String gomokuSpectate(org.springframework.ui.Model model,
+      org.springframework.security.core.Authentication authentication) {
+    if (authentication != null)
+      model.addAttribute("username", authentication.getName());
+    model.addAttribute("game", "gomoku");
+    return "gomoku_spectate";
   }
 }
