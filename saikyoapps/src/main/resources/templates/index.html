@@ -28,13 +28,13 @@
 
     <div id="game-actions" style="margin-top:16px; display:flex; gap:8px; justify-content:center;">
       <!-- マッチング開始 -->
-      <button id="start-matching-btn" class="btn primary" th:text="#{{home.match.start}}">マッチング開始</button>
+      <button id="start-matching-btn" class="btn primary" th:text="#{home.match.start}">マッチング開始</button>
       <!-- 観戦ボタン（ゲーム選択に応じて表示・ラベル切替） -->
       <button id="spectate-btn" type="button" style="display:none;margin-left:8px;" class="btn primary">観戦</button>
     </div>
     </div>
 
-    <script>
+    <script th:inline="javascript">
       (function () {
         const gameButtons = document.querySelectorAll('.game-btn');
         const startBtn = document.getElementById('start-matching-btn');
@@ -59,7 +59,7 @@
           if (!spectateBtn) return;
           if (spectateSupportedGames.includes(selectedGame)) {
             spectateBtn.style.display = '';
-            spectateBtn.textContent = spectateLabels[selectedGame] || '観戦';
+            spectateBtn.textContent = spectateLabels[selectedGame] || /*[[#{home.spectate.default}]]*/ '観戦';
           } else {
             spectateBtn.style.display = 'none';
           }
