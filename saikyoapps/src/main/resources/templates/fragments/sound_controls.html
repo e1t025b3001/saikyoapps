@@ -1,0 +1,47 @@
+<div th:fragment="soundControls" id="soundControls"
+  style="position:fixed;right:12px;bottom:12px;background:#fff;border:1px solid #ddd;padding:8px;border-radius:6px;z-index:9999;">
+  <label><input type="checkbox" id="soundMuted"> ミュート</label>
+  <div>
+    音量: <input type="range" id="soundVolume" min="0" max="1" step="0.05" value="1">
+  </div>
+</div>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  (function () {
+    const initSoundControls = async function () {
+      // 初回ユーザー操作で soundManager.init() を呼ぶための接続
+      const ensureInit = function () {
+        if (window.soundManager && !window.soundManager._initialized) {
+          window.soundManager.init().catch(e => console.warn(e));
+        }
+        window.removeEventListener('click', ensureInit);
+      };
+      window.addEventListener('click', ensureInit);
+      // フラグメントのクリックで init を呼べるようにダイレクトバインドも追加
+      document.getElementById('soundControls').addEventListener('click', ensureInit);
+
+      // UI 初期値
+      try {
+        const muted = localStorage.getItem('soundMuted');
+        const vol = localStorage.getItem('soundVolume');
+        if (muted !== null) document.getElementById('soundMuted').checked = (muted === 'true');
+        if (vol !== null) document.getElementById('soundVolume').value = vol;
+      } catch (e) { }
+
+      document.getElementById('soundMuted').addEventListener('change', function (e) {
+        if (window.soundManager) window.soundManager.setMuted(e.target.checked);
+        try { localStorage.setItem('soundMuted', e.target.checked ? 'true' : 'false'); } catch (e) { }
+      });
+      document.getElementById('soundVolume').addEventListener('input', function (e) {
+        const v = parseFloat(e.target.value);
+        if (window.soundManager) window.soundManager.setVolume(v);
+        try { localStorage.setItem('soundVolume', String(v)); } catch (e) { }
+      });
+    };
+    // DOMContentLoaded 後にバインド
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initSoundControls);
+    else initSoundControls();
+  })();
+  /*]]>*/
+</script>

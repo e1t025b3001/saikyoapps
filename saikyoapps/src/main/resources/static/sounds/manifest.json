@@ -1,0 +1,28 @@
+{
+  "place": {
+    "files": [
+      "/sounds/gomoku/sfx_place.ogg"
+    ],
+    "volume": 1.0,
+    "preload": true
+  },
+  "win": {
+    "files": [
+      "/sounds/gomoku/sfx_win.ogg"
+    ],
+    "volume": 1.0
+  },
+  "marubatsu_place": {
+    "files": [
+      "/sounds/marubatsu/sfx_place.ogg"
+    ],
+    "volume": 1.0,
+    "preload": true
+  },
+  "marubatsu_win": {
+    "files": [
+      "/sounds/marubatsu/sfx_win.ogg"
+    ],
+    "volume": 1.0
+  }
+}
