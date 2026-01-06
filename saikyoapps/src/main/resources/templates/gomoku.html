@@ -487,8 +487,34 @@
       drawBoard();
       startMatchPoll();
 
+      // 新增：投降按鈕的事件處理
+      (function setupSurrender() {
+        const sBtn = document.getElementById('surrenderBtn');
+        if (!sBtn) return;
+        sBtn.addEventListener('click', function () {
+          try {
+            if (finished) return;
+            if (!gameId) { alert(I18N.gameNotStarted || 'Game not started yet'); return; }
+            if (!confirm(I18N.confirmForfeit || 'Are you sure to forfeit and return to lobby?')) return;
+            sBtn.disabled = true;
+            fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '/forfeit', {
+              method: 'POST', credentials: 'include'
+            }).then(resp => {
+              if (!resp.ok) { finishFallback(); return; }
+              const j = resp.json || {};
+              // 如果是玩家自行投降，顯示敗北訊息；觀戰者不會看到投降按鈕
+              const text = myColor ? (I18N.resultLoseYou || 'You lose...') : (I18N.resultFinished || 'The game has finished');
+              // 對於玩家導回大廳（backToSpectate=false），對於觀戰者導回觀戰頁面（若有）
+              showResultDialogText(text, !myColor);
+            }).catch(e => {
+              console.error('forfeit error', e);
+              finishFallback();
+            }).finally(() => { sBtn.disabled = false; });
+          } catch (e) { console.error('surrender handler error', e); }
+        });
+      })();
 
-    // sound fragment を挿入: script で soundManager を読み込み
+      // sound fragment を挿入: script で soundManager を読み込み
       (function insertSoundScripts() {
         // soundManager.js を読み込む
         const sm = document.createElement('script');
@@ -512,7 +538,7 @@
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', insertFragment);
         else insertFragment();
       })();
-    }) ();
+    })();
   </script>
 
 </body>
