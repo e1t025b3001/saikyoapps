@@ -28,10 +28,9 @@
 
     <div id="game-actions" style="margin-top:16px; display:flex; gap:8px; justify-content:center;">
       <!-- マッチング開始 -->
-      <button id="start-matching-btn" class="btn primary" th:text="#{home.match.start}">マッチング開始</button>
-      <!-- 観戦（五目並べ）: 五目並べ選択時のみ表示 -->
-      <button id="spectate-gomoku-btn" type="button" style="display:none;margin-left:8px;" class="btn primary"
-        th:text="#{home.spectate.gomoku}">観戦（五目並べ）</button>
+      <button id="start-matching-btn" class="btn primary" th:text="#{{home.match.start}}">マッチング開始</button>
+      <!-- 観戦ボタン（ゲーム選択に応じて表示・ラベル切替） -->
+      <button id="spectate-btn" type="button" style="display:none;margin-left:8px;" class="btn primary">観戦</button>
     </div>
     </div>
 
@@ -39,11 +38,15 @@
       (function () {
         const gameButtons = document.querySelectorAll('.game-btn');
         const startBtn = document.getElementById('start-matching-btn');
-        const spectateBtn = document.getElementById('spectate-gomoku-btn');
+        const spectateBtn = document.getElementById('spectate-btn');
         let selectedGame = null;
 
         // どのゲームが観戦をサポートするか
-        const spectateSupportedGames = ['gomoku'];
+        const spectateSupportedGames = ['gomoku', 'marubatsu'];
+        const spectateLabels = {
+          gomoku: /*[[#{home.spectate.gomoku}]]*/ '観戦（五目並べ）',
+          marubatsu: /*[[#{home.spectate.marubatsu}]]*/ '観戦（マルバツ）'
+        };
 
         function clearSelectionStyles() {
           gameButtons.forEach(b => {
@@ -54,7 +57,12 @@
 
         function updateSpectateButtonVisibility() {
           if (!spectateBtn) return;
-          spectateBtn.style.display = spectateSupportedGames.includes(selectedGame) ? '' : 'none';
+          if (spectateSupportedGames.includes(selectedGame)) {
+            spectateBtn.style.display = '';
+            spectateBtn.textContent = spectateLabels[selectedGame] || '観戦';
+          } else {
+            spectateBtn.style.display = 'none';
+          }
         }
 
         gameButtons.forEach(btn => {

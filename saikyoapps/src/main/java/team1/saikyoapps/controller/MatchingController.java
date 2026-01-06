@@ -549,4 +549,13 @@ public class MatchingController {
     model.addAttribute("game", "gomoku");
     return "gomoku_spectate";
   }
+
+  @GetMapping("/marubatsu/spectate")
+  public String marubatsuSpectate(org.springframework.ui.Model model,
+      org.springframework.security.core.Authentication authentication) {
+    if (authentication != null)
+      model.addAttribute("username", authentication.getName());
+    model.addAttribute("game", "marubatsu");
+    return "marubatsu_spectate";
+  }
 }
