@@ -5,37 +5,81 @@
   <meta charset="UTF-8" />
   <title th:text="#{title.gomoku}">五目並べ（Gomoku）</title>
   <style>
+    /* Base page reset */
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
     body {
       font-family: Arial, sans-serif;
+      background: #fff;
     }
 
+    /* scaleRoot: the fixed "paper" that will be scaled to fit viewport */
+    #scaleRoot {
+      width: 960px;
+      /* base paper width */
+      height: 800px;
+      /* base paper height */
+      margin: 0 auto;
+      transform-origin: top center;
+      box-sizing: border-box;
+    }
+
+    /* page container inside the paper */
+    #pageContainer {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    /* title, controls and surrender are centered and constrained to board width */
+    h1,
+    #surrenderWrap,
+    #controls,
+    #turnWrap {
+      width: min(600px, 94vw);
+      max-width: 600px;
+      margin: 6px auto;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    /* responsive centered board container */
     #boardWrap {
-      width: 600px;
-      margin: 16px auto;
+      width: min(600px, 94vw);
+      max-width: 600px;
+      margin: 8px auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      aspect-ratio: 1 / 1;
+      /* keep square */
+      box-sizing: border-box;
     }
 
-    canvas {
+    /* canvas fills the square container */
+    canvas#gomokuBoard {
+      width: 100%;
+      height: 100%;
       background: #f5deb3;
       display: block;
-      margin: 0 auto;
       border: 1px solid #333;
+      box-sizing: border-box;
     }
 
-    #info {
-      text-align: center;
-      margin-top: 8px;
+    #turnWrap {
+      margin-top: 6px;
     }
 
-    #controls {
-      text-align: center;
-      margin-top: 12px;
-    }
-
-    button {
-      padding: 8px 12px;
-    }
-
-    /* 勝敗確認對話框樣式 */
+    /* result dialog */
     #resultDialog {
       display: none;
       position: fixed;
@@ -67,7 +111,7 @@
   </style>
 </head>
 
-<body>
+<body th:attr="data-game=${game}">
   <!-- I18N: server-rendered messages made available to client JS -->
   <script th:inline="javascript">
     /*<![CDATA[*/
@@ -86,37 +130,43 @@
       resultLoseYou: /*[[#{result.lose.you}]]*/ 'You lose...',
       resultFinished: /*[[#{result.finished}]]*/ 'The game has finished',
       resultFinishedLobby: /*[[#{result.finished.lobby}]]*/ 'The game has finished (returning to lobby)',
-      resultReturnBtn: /*[[#{button.confirm_and_return}]]*/ 'Confirm and return'
+      resultReturnBtn: /*[[#{button.confirm_and_return}]]*/ 'Confirm and return',
+      buttonSurrender: /*[[#{button.surrender}]]*/ 'Surrender',
+      waiting: /*[[#{game.waiting}]]*/ 'Waiting...'
     };
     /*]]>*/
   </script>
 
-  <h1 style="text-align:center;" th:text="#{title.gomoku}">五目並べ</h1>
+  <div id="scaleRoot">
+    <div id="pageContainer">
+      <h1 style="text-align:center;" th:text="#{title.gomoku}">五目並べ</h1>
 
-  <div id="spectateBanner" class="spectateBanner"></div>
+      <div id="spectateBanner" class="spectateBanner"></div>
 
-  <div id="controls">
-    <input type="hidden" id="pageGame" th:value="${game}" />
-  </div>
+      <div id="controls">
+        <input type="hidden" id="pageGame" th:value="${game}" />
+      </div>
 
-  <div id="surrenderWrap" style="text-align:center;margin-top:8px;">
-    <button id="surrenderBtn" th:text="#{button.surrender}">投降</button>
-  </div>
+      <div id="surrenderWrap" style="text-align:center;margin-top:8px;">
+        <button id="surrenderBtn" th:text="#{button.surrender}">投降</button>
+      </div>
 
-  <!-- 勝敗確認ダイアログ -->
-  <div id="resultDialog"
-    style="display:none;position:fixed;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);">
-    <div style="background:#fff;padding:16px;border-radius:6px;width:320px;margin:120px auto;text-align:center;">
-      <div id="resultDialogText" style="margin-bottom:12px;font-weight:bold;color:#b00;"></div>
-      <button id="resultConfirmBtn" th:text="#{button.confirm_and_return}">確認並返回大廳</button>
-    </div>
-  </div>
+      <div id="turnWrap">
+        <div id="turnInfo" th:text="#{game.waiting}">等待中...</div>
+        <div id="result" style="color:darkred;font-weight:bold;"></div>
+      </div>
 
-  <div id="boardWrap">
-    <canvas id="gomokuBoard" width="600" height="600"></canvas>
-    <div id="info">
-      <div id="turnInfo" th:text="#{game.waiting}">等待中...</div>
-      <div id="result" style="color:darkred;font-weight:bold;"></div>
+      <div id="boardWrap">
+        <canvas id="gomokuBoard" width="600" height="600"></canvas>
+      </div>
+
+      <div id="resultDialog" style="display:none;">
+        <div>
+          <div id="resultDialogText" style="margin-bottom:12px;font-weight:bold;color:#b00;"></div>
+          <button id="resultConfirmBtn" th:text="#{button.confirm_and_return}">確認並返回大廳</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -126,42 +176,63 @@
     /*]]>*/
 
     (function () {
-      // 取得本地化字串（由 server 提供在 body 的 data-attributes）
-      const body = document.body;
-      const MSG = {
-        gameNotStarted: body.getAttribute('data-game-not-started') || 'Game not started yet',
-        confirmForfeit: body.getAttribute('data-confirm-forfeit') || 'Are you sure to forfeit and return to lobby?',
-        resultWinYou: body.getAttribute('data-result-win-you') || 'You win!',
-        resultLoseYou: body.getAttribute('data-result-lose-you') || 'You lose...',
-        resultFinished: body.getAttribute('data-result-finished') || 'The game has finished',
-        resultFinishedLobby: body.getAttribute('data-result-finished-lobby') || 'The game has finished (returning to lobby)'
-      };
-
-      // 簡潔版 Gomoku 前端
       const origin = window.location.origin;
       const size = 15;
       const canvas = document.getElementById('gomokuBoard');
       const ctx = canvas.getContext('2d');
-      const cssW = canvas.width,
-        cssH = canvas.height;
-      const DPR = window.devicePixelRatio || 1;
-      canvas.width = Math.floor(cssW * DPR);
-      canvas.height = Math.floor(cssH * DPR);
-      canvas.style.width = cssW + 'px';
-      canvas.style.height = cssH + 'px';
-      ctx.scale(DPR, DPR);
-      const cell = cssW / (size - 1);
 
+      // track global scale applied to #scaleRoot
+      let currentGlobalScale = 1.0;
+
+      // compute and apply global page scale so the 'paper' fits viewport
+      function applyGlobalScale() {
+        const root = document.getElementById('scaleRoot');
+        if (!root) return;
+        const baseW = 960,
+          baseH = 800;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const scale = Math.max(0.35, Math.min(1.0, Math.min(vw / baseW, vh / baseH)));
+        currentGlobalScale = scale;
+        root.style.transform = 'scale(' + scale + ')';
+        document.body.style.minHeight = Math.ceil(baseH * scale) + 'px';
+      }
+
+      // resize canvas internal buffer according to displayed CSS size / currentGlobalScale
+      let cssW = 600,
+        cssH = 600;
+      let cell = 0;
+      function resizeCanvasAndLayout() {
+        const rect = canvas.getBoundingClientRect();
+        // rect is affected by page scale; divide by currentGlobalScale to get unscaled CSS pixels
+        cssW = Math.max(1, rect.width / Math.max(0.0001, currentGlobalScale));
+        cssH = Math.max(1, rect.height / Math.max(0.0001, currentGlobalScale));
+
+        // recalc DPR in case browser zoom or display scale changed
+        const DPR = window.devicePixelRatio || 1;
+
+        // set internal buffer for HiDPI
+        canvas.width = Math.floor(cssW * DPR);
+        canvas.height = Math.floor(cssH * DPR);
+        canvas.style.width = cssW + 'px';
+        canvas.style.height = cssH + 'px';
+
+        // set transform so drawing uses CSS pixels scaled by DPR
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+        cell = cssW / (size - 1);
+      }
+
+      // drawing helpers
       let board = Array.from({ length: size }, () => Array(size).fill(0));
       let myColor = null; // 1 black, 2 white
-      let currentTurn = 1; // 1 black, 2 white
+      let currentTurn = 1;
       let finished = false;
       let gameId = null;
       let matchTimer = null;
       let gameTimer = null;
-
-      let playerBlack = null;
-      let playerWhite = null;
+      let playerBlack = null,
+        playerWhite = null;
       let lastFinishedShown = false;
 
       function drawBoard() {
@@ -199,8 +270,9 @@
 
       function posToCell(clientX, clientY) {
         const rect = canvas.getBoundingClientRect();
-        const rx = clientX - rect.left,
-          ry = clientY - rect.top;
+        // convert client coords to canvas CSS pixels, accounting for global scale
+        const rx = (clientX - rect.left) / Math.max(0.0001, currentGlobalScale);
+        const ry = (clientY - rect.top) / Math.max(0.0001, currentGlobalScale);
         const c = Math.round(rx / cell),
           r = Math.round(ry / cell);
         return { r, c };
@@ -216,11 +288,6 @@
         el.textContent = currentTurn === myColor ? (I18N.turnYour || 'Your turn') : (I18N.turnOpponent || 'Opponent\'s turn');
       }
 
-      function showResultText(t) {
-        document.getElementById('result').textContent = t;
-      }
-
-      // 結果ダイアログ（共通）
       function showResultDialogText(text, backToSpectate) {
         finished = true;
         if (matchTimer) { clearInterval(matchTimer); matchTimer = null; }
@@ -230,25 +297,16 @@
         const dlg = document.getElementById('resultDialog');
         dlg.style.display = 'block';
         const confirmBtn = document.getElementById('resultConfirmBtn');
-        confirmBtn.onclick = function () {
-          location.href = backToSpectate ? '/gomoku/spectate' : '/';
-        };
-        setTimeout(() => {
-          if (dlg.style.display !== 'none') {
-            location.href = backToSpectate ? '/gomoku/spectate' : '/';
-          }
-        }, 10000);
+        confirmBtn.onclick = function () { location.href = backToSpectate ? '/gomoku/spectate' : '/'; };
+        setTimeout(() => { if (dlg.style.display !== 'none') location.href = backToSpectate ? '/gomoku/spectate' : '/'; }, 10000);
       }
 
-      // 安全な fetch。{ok, status, json} を返す
       function fetchSafe(url, opts) {
         return fetch(url, opts).then(res => {
           const status = res.status;
           const contentType = res.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) {
-            return res.json().then(j => ({ ok: res.ok, status: status, json: j }));
-          }
-          return { ok: res.ok, status: status, json: null };
+          if (contentType.includes('application/json')) return res.json().then(j => ({ ok: res.ok, status, json: j }));
+          return { ok: res.ok, status, json: null };
         });
       }
 
@@ -281,25 +339,24 @@
         showResultDialogText(`対局終了（勝者: ${winSide}）`, true);
       }
 
-      // fallback: サーバが 404/400 等を返した場合は終了扱いとして戻す
       function finishFallback() {
         if (matchTimer) { clearInterval(matchTimer); matchTimer = null; }
         if (gameTimer) { clearInterval(gameTimer); gameTimer = null; }
         fetchSafe(origin + '/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' })
           .then(r => {
-            let text = '対局が終了しました';
+            let text = I18N.resultFinished || '対局が終了しました';
             if (r && r.json) {
               const s = r.json.status;
-              if (s === 'lobby') text = '対局が終了しました（ロビーへ戻ります）';
+              if (s === 'lobby') text = I18N.resultFinishedLobby || '対局が終了しました（ロビーへ戻ります）';
             }
             showResultDialogText(text, false);
           }).catch(e => {
             console.warn('finishFallback error', e);
-            showResultDialogText('対局が終了しました', false);
+            showResultDialogText(I18N.resultFinished || '対局が終了しました', false);
           });
       }
 
-      // 點擊處理：只在 server 成功後更新
+      // click handling
       canvas.addEventListener('click', function (e) {
         if (finished) return;
         const { r, c } = posToCell(e.clientX, e.clientY);
@@ -308,17 +365,12 @@
         if (!gameId) { console.warn('no gameId yet'); return; }
         if (!myColor || currentTurn !== myColor) { console.warn('not your turn'); return; }
 
-        // 禁用點擊
         canvas.style.pointerEvents = 'none';
         fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '/move', {
           method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ x: c, y: r })
         }).then(resp => {
-          if (!resp.ok) {
-            console.warn('move resp not ok', resp.status);
-            finishFallback();
-            return;
-          }
+          if (!resp.ok) { finishFallback(); return; }
           const j = resp.json || {};
           if (j.board) board = j.board;
           if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
@@ -332,14 +384,14 @@
                 : (myColor === 2 ? I18N.resultWinYou : I18N.resultLoseYou);
               showResultDialogText(text, false);
             } else {
-              showResultDialogText(MSG.resultFinished, false);
+              showResultDialogText(I18N.resultFinished, false);
             }
           }
-          drawBoard();
-          updateTurnText();
+          drawBoard(); updateTurnText();
         }).catch(err => { console.error('move error', err); finishFallback(); }).finally(() => { canvas.style.pointerEvents = ''; });
       });
 
+      // polling and game loop (kept as original logic)
       function startMatchPoll() {
         matchTimer = setInterval(() => {
           fetchSafe(origin + '/matching/status?game=' + encodeURIComponent(game), { cache: 'no-store', credentials: 'include' })
@@ -347,25 +399,16 @@
               if (!res || !res.ok) return;
               const j = res.json || {};
               if (!j) return;
-              if (j.status === 'lobby') {
-                clearInterval(matchTimer);
-                if (gameTimer) clearInterval(gameTimer);
-                location.href = '/';
-                return;
-              }
-              if (j.status === 'playing' && j.gameId) {
-                if (!gameId) startGameLoop(j.gameId);
-              }
+              if (j.status === 'lobby') { clearInterval(matchTimer); if (gameTimer) clearInterval(gameTimer); location.href = '/'; return; }
+              if (j.status === 'playing' && j.gameId) { if (!gameId) startGameLoop(j.gameId); }
             }).catch(e => { console.error('matching fetch', e); });
         }, 1000);
       }
 
       function startGameLoop(gid) {
         gameId = gid;
-
         const surrenderWrap = document.getElementById('surrenderWrap');
 
-        // 立即取得一次遊戲狀態
         fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId), { cache: 'no-store', credentials: 'include' })
           .then(resp => {
             if (!resp.ok) { finishFallback(); return; }
@@ -373,20 +416,12 @@
             if (j.board) board = j.board;
             if (j.turn) currentTurn = (j.turn === 'black') ? 1 : 2;
             if (j.myColor) myColor = (j.myColor === 'black') ? 1 : 2;
-
             playerBlack = j.playerBlack || null;
             playerWhite = j.playerWhite || null;
-            if (j.finished) { finished = true; }
-
+            if (j.finished) finished = true;
             if (!myColor && surrenderWrap) surrenderWrap.style.display = 'none';
-
-            drawBoard();
-            updateTurnText();
-            updateSpectateBanner();
-
-            if (j.finished && !myColor) {
-              showFinishedDialogForSpectator(j);
-            }
+            resizeCanvasAndLayout(); drawBoard(); updateTurnText(); updateSpectateBanner();
+            if (j.finished && !myColor) showFinishedDialogForSpectator(j);
             if (j.finished && myColor) {
               const text = (j.winner === 'black')
                 ? (myColor === 1 ? I18N.resultWinYou : I18N.resultLoseYou)
@@ -405,14 +440,9 @@
               if (j.myColor) myColor = (j.myColor === 'black') ? 1 : 2;
               playerBlack = j.playerBlack || playerBlack;
               playerWhite = j.playerWhite || playerWhite;
-              if (j.finished) { finished = true; }
-
+              if (j.finished) finished = true;
               if (!myColor && surrenderWrap) surrenderWrap.style.display = 'none';
-
-              drawBoard();
-              updateTurnText();
-              updateSpectateBanner();
-
+              drawBoard(); updateTurnText(); updateSpectateBanner();
               if (j.finished) {
                 if (!myColor) {
                   showFinishedDialogForSpectator(j);
@@ -427,35 +457,37 @@
         }, 1000);
       }
 
-      document.getElementById('surrenderBtn').addEventListener('click', function () {
-        if (!gameId) return alert(I18N.gameNotStarted || 'Game not started yet');
-        if (!confirm(I18N.confirmForfeit || 'Are you sure to forfeit and return to lobby?')) return;
-        fetchSafe(origin + '/gomoku/' + encodeURIComponent(gameId) + '/forfeit', { method: 'POST', credentials: 'include' })
-          .then(resp => {
-            if (!resp.ok) { finishFallback(); return; }
-            const j = resp.json || {};
-            const winner = j.winner;
-            const text = (winner === 'black')
-              ? (myColor === 1 ? I18N.resultWinYou : I18N.resultLoseYou)
-              : (myColor === 2 ? I18N.resultWinYou : I18N.resultLoseYou);
-            showResultDialogText(text, false);
-          }).catch(e => { console.error('forfeit error', e); finishFallback(); });
-      });
-
-      // 初期化
-      drawBoard();
-      updateTurnText();
-
-      // 観戦モード：URL matchId があれば matching/status を使わずに直接 startGameLoop
-      const directGid = getQueryParam('matchId');
-      if (directGid) {
-        startGameLoop(directGid);
-      } else {
-        startMatchPoll();
+      // handle viewport/zoom changes: keep scale and canvas in sync
+      function onViewportChange() {
+        try {
+          applyGlobalScale();
+          resizeCanvasAndLayout();
+          drawBoard();
+          updateTurnText();
+          updateSpectateBanner();
+        } catch (e) {
+          console.warn('onViewportChange error', e);
+        }
       }
+
+      window.addEventListener('resize', onViewportChange);
+      window.addEventListener('orientationchange', onViewportChange);
+      window.addEventListener('pageshow', onViewportChange);
+      window.addEventListener('focus', onViewportChange);
+      if (window.visualViewport && window.visualViewport.addEventListener) {
+        window.visualViewport.addEventListener('resize', onViewportChange);
+        window.visualViewport.addEventListener('scroll', onViewportChange);
+      }
+
+      // initial setup
+      applyGlobalScale();
+      resizeCanvasAndLayout();
+      drawBoard();
+      startMatchPoll();
 
     })();
   </script>
+
 </body>
 
 </html>
