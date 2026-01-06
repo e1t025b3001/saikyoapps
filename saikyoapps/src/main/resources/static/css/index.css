@@ -22,3 +22,92 @@ body[data-page="index"] .game-btn:hover {
   transform: translateY(-8px);
   box-shadow: 0 28px 60px rgba(37, 99, 235, 0.12)
 }
+
+/* i18n language selector styles */
+#i18n-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+/* hide native radio UI, use labels as buttons */
+#i18n-form input[type="radio"] {
+  display: none;
+}
+
+#i18n-form label {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+  color: #222;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.02);
+}
+
+/* checked state: label immediately following checked input */
+#i18n-form input[type="radio"]:checked+label {
+  background: linear-gradient(180deg, #0d6efd, #0b5ed7);
+  color: #fff;
+  border-color: rgba(11, 94, 215, 0.9);
+  box-shadow: 0 10px 30px rgba(13, 110, 253, 0.18);
+  transform: translateY(-3px);
+}
+
+/* save button style */
+#save-i18n-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: none;
+  background: #28a745;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(40, 167, 69, 0.12);
+  transition: transform .08s ease, box-shadow .08s ease, opacity .08s ease;
+}
+
+#save-i18n-btn:hover {
+  transform: translateY(-2px);
+}
+
+#save-i18n-btn[disabled],
+#save-i18n-btn[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* small screens: wrap the selector */
+@media (max-width: 520px) {
+  #i18n-form {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+/* logout button style (targets rendered form[action="/logout"]) */
+body[data-page="index"] form[action="/logout"] button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ff6b6b, #e55353);
+  /* red gradient */
+  border: 1px solid rgba(229, 83, 83, 0.9);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(229, 83, 83, 0.12);
+  transition: transform .08s ease, box-shadow .08s ease, background .08s ease;
+}
+
+body[data-page="index"] form[action="/logout"] button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 34px rgba(229, 83, 83, 0.18);
+  background: linear-gradient(180deg, #ff5c5c, #d94343);
+}

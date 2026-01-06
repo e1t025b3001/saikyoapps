@@ -21,16 +21,17 @@
         th:text="#{home.games.Othello}">オセロ</a>
       <a th:href="@{/matching(game='shinkeisuijaku')}" class="game-btn" data-game="shinkeisuijaku"
         th:text="#{home.games.memory-game}">神経衰弱</a>
-      <a th:href="@{/matching(game='uno')}" class="game-btn" data-game="uno">UNO</a>
-      <a th:href="@{/matching(game='darour')}" class="game-btn" data-game="darour">大老二</a>
+      <a th:href="@{/matching(game='uno')}" class="game-btn" data-game="uno" th:text="#{home.games.uno}">UNO</a>
+      <a th:href="@{/matching(game='darour')}" class="game-btn" data-game="darour"
+        th:text="#{home.games.darour}">大老二</a>
     </div>
 
     <div id="game-actions" style="margin-top:16px; display:flex; gap:8px; justify-content:center;">
       <!-- マッチング開始 -->
       <button id="start-matching-btn" class="btn primary" th:text="#{home.match.start}">マッチング開始</button>
       <!-- 観戦（五目並べ）: 五目並べ選択時のみ表示 -->
-      <button id="spectate-gomoku-btn" type="button" style="display:none;margin-left:8px;"
-        class="btn primary">観戦（五目並べ）</button>
+      <button id="spectate-gomoku-btn" type="button" style="display:none;margin-left:8px;" class="btn primary"
+        th:text="#{home.spectate.gomoku}">観戦（五目並べ）</button>
     </div>
     </div>
 
@@ -71,7 +72,7 @@
         if (startBtn) {
           startBtn.addEventListener('click', function () {
             if (!selectedGame) {
-              alert('ゲームを選択してください。');
+              alert(document.documentElement.getAttribute('data-alert-select') || 'Please select a game.');
               return;
             }
             const url = '/matching?game=' + encodeURIComponent(selectedGame);
@@ -81,8 +82,8 @@
 
         if (spectateBtn) {
           spectateBtn.addEventListener('click', function () {
-            if (!selectedGame) { alert('先にゲームを選択してください。'); return; }
-            if (!spectateSupportedGames.includes(selectedGame)) { alert('このゲームは観戦できません。'); return; }
+            if (!selectedGame) { alert(document.documentElement.getAttribute('data-alert-select-spectate') || 'Please select a game first.'); return; }
+            if (!spectateSupportedGames.includes(selectedGame)) { alert(document.documentElement.getAttribute('data-alert-spectate-not-supported') || 'This game does not support spectate.'); return; }
             const url = '/' + encodeURIComponent(selectedGame) + '/spectate';
             window.location.href = url;
           });
@@ -104,7 +105,9 @@
       <label for="radio1">日本語</label>
       <input id="radio2" type="radio" name="i18n" value="zh_TW" th:checked="${i18n == 'zh_TW'}" />
       <label for="radio2">中国語(繁體字)</label>
-      <button type="submit" id="save-i18n-btn" style="display:none;">保存</button>
+      <input id="radio3" type="radio" name="i18n" value="en" th:checked="${i18n == 'en'}" />
+      <label for="radio3">English</label>
+      <button type="submit" id="save-i18n-btn" style="display:none;" th:text="#{button.save}">保存</button>
     </form>
 
     <div id="i18n-root" th:attr="data-current=${i18n}" style="display:none"></div>
@@ -128,6 +131,17 @@
 
         radios.forEach(r => r.addEventListener('change', updateSaveVisibility));
         updateSaveVisibility();
+      })();
+      /*]]>*/
+    </script>
+
+    <!-- data attributes for client-side alerts (filled from server via Thymeleaf) -->
+    <script th:inline="javascript">
+      /*<![CDATA[*/
+      (function () {
+        document.documentElement.setAttribute('data-alert-select', /*[[#{alert.selectGame}]]*/ 'Please select a game.');
+        document.documentElement.setAttribute('data-alert-select-spectate', /*[[#{alert.selectSpectateFirst}]]*/ 'Please select a game first.');
+        document.documentElement.setAttribute('data-alert-spectate-not-supported', /*[[#{alert.spectateNotSupported}]]*/ 'This game does not support spectate.');
       })();
       /*]]>*/
     </script>
