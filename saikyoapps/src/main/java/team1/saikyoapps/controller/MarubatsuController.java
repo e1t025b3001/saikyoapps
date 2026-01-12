@@ -49,6 +49,28 @@ public class MarubatsuController {
   private final Map<String, Map<String, Object>> finishedWinners = new ConcurrentHashMap<>();
   private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
+  // 観戦一覧（対局中のみ）
+  @GetMapping("/spectate/list")
+  public ResponseEntity<List<Map<String, Object>>> listSpectateGames(Authentication authentication) {
+    try {
+      if (authentication == null) {
+        return ResponseEntity.status(401).build();
+      }
+      List<MarubatsuGame> games = gameMapper.findPlayingGames();
+      List<Map<String, Object>> res = new ArrayList<>();
+      for (MarubatsuGame g : games) {
+        res.add(Map.of(
+            "gameId", g.getGameId(),
+            "playerX", g.getPlayerX(),
+            "playerO", g.getPlayerO()));
+      }
+      return ResponseEntity.ok(res);
+    } catch (Exception ex) {
+      logger.error("Error in listSpectateGames", ex);
+      return ResponseEntity.status(500).build();
+    }
+  }
+
   // ゲーム状態取得（クライアントから poll される）
   @GetMapping("/{gameId}")
   public ResponseEntity<Map<String, Object>> getGame(@PathVariable String gameId, Authentication authentication) {
@@ -66,6 +88,10 @@ public class MarubatsuController {
           res.put("loser", info.get("loser"));
           if (info.containsKey("winningLine"))
             res.put("winningLine", info.get("winningLine"));
+          // 観戦表示用に player を null にし mode を spectator に設定
+          res.put("playerX", null);
+          res.put("playerO", null);
+          res.put("mode", "spectator");
           return ResponseEntity.ok(res);
         }
         return ResponseEntity.notFound().build();
@@ -93,15 +119,23 @@ public class MarubatsuController {
         if (info.containsKey("winningLine"))
           res.put("winningLine", info.get("winningLine"));
       }
+
+      // モード判定（player / spectator）と mySymbol を返す
+      String mode = "spectator";
       if (authentication != null) {
         String user = authentication.getName();
-        if (user.equals(g.getPlayerX()))
+        if (user.equals(g.getPlayerX())) {
           res.put("mySymbol", "X");
-        else if (user.equals(g.getPlayerO()))
+          mode = "player";
+        } else if (user.equals(g.getPlayerO())) {
           res.put("mySymbol", "O");
+          mode = "player";
+        }
       }
+
       res.put("playerX", g.getPlayerX());
       res.put("playerO", g.getPlayerO());
+      res.put("mode", mode);
       return ResponseEntity.ok(res);
     } catch (Exception ex) {
       logger.error("Error in getGame for {}", gameId, ex);

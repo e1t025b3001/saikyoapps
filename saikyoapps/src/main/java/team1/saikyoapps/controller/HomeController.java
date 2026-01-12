@@ -42,7 +42,15 @@ public class HomeController {
       model.addAttribute("i18n", localeStr);
 
       // messageSource からタイトルを取得
-      Locale locale = "zh_TW".equals(localeStr) ? Locale.forLanguageTag("zh-TW") : Locale.forLanguageTag("ja");
+      // サポートするロケールを列挙（zh_TW, en, ja）
+      Locale locale;
+      if ("zh_TW".equals(localeStr)) {
+        locale = Locale.forLanguageTag("zh-TW");
+      } else if ("en".equals(localeStr)) {
+        locale = Locale.forLanguageTag("en");
+      } else {
+        locale = Locale.forLanguageTag("ja");
+      }
       String title = messageSource.getMessage("title", new Object[] { user }, locale);
       model.addAttribute("i18n_title", title);
 
@@ -77,7 +85,14 @@ public class HomeController {
       }
 
       // セッションの Locale を更新して、次回以降のリクエストに反映させる
-      Locale locale = "zh_TW".equals(i18n) ? Locale.forLanguageTag("zh-TW") : Locale.forLanguageTag("ja");
+      Locale locale;
+      if ("zh_TW".equals(i18n)) {
+        locale = Locale.forLanguageTag("zh-TW");
+      } else if ("en".equals(i18n)) {
+        locale = Locale.forLanguageTag("en");
+      } else {
+        locale = Locale.forLanguageTag("ja");
+      }
       try {
         localeResolver.setLocale(request, response, locale);
       } catch (Exception e) {
