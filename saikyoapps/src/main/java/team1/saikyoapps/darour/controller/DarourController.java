@@ -25,6 +25,7 @@ import team1.saikyoapps.darour.model.DarourGameState;
 import team1.saikyoapps.darour.model.DarourGameStateMapper;
 import team1.saikyoapps.darour.model.Hand;
 import team1.saikyoapps.darour.service.DarourPlayTurnService;
+import team1.saikyoapps.model.MatchingQueueMapper; // 追加: プレイヤーステータス更新用
 
 @Controller
 public class DarourController {
@@ -36,6 +37,9 @@ public class DarourController {
 
   @Autowired
   DarourPlayTurnService darourPlayTurnService;
+
+  @Autowired
+  MatchingQueueMapper matchingQueueMapper; // 追加: ゲーム終了時にステータスをロビーに戻す
 
   @GetMapping(value = "/darour", params = "!matchId")
   public String darourWhenMatchIdNotPresent(Model model, Authentication authentication) {
@@ -196,6 +200,19 @@ public class DarourController {
     }
     response.put("finished", finished);
     response.put("winner", winner);
+
+    // ゲームが終了していればプレイヤーのステータスを 'lobby' に更新する
+    if (finished) {
+      try {
+        // 日本語コメント: ゲーム終了時に各プレイヤーをロビーに戻す
+        matchingQueueMapper.updatePlayerStatus(game.getPlayer1(), "lobby", null);
+        matchingQueueMapper.updatePlayerStatus(game.getPlayer2(), "lobby", null);
+        matchingQueueMapper.updatePlayerStatus(game.getPlayer3(), "lobby", null);
+      } catch (Exception ex) {
+        // 更新失敗はログ出力のみで処理を続行
+        System.err.println("Failed to update player status to lobby for darour: " + ex.getMessage());
+      }
+    }
 
     return response;
   }
