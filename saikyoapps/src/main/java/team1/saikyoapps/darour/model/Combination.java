@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class Combination {
+public class Combination implements Comparable<Combination> {
   public enum CombinationResult {
     HIGH_CARD,
     PAIR,
@@ -35,6 +35,7 @@ public class Combination {
   }
 
   public final ArrayList<Card> cards;
+
   public final CombinationResult result;
 
   private Combination(ArrayList<Card> cards) {
@@ -75,6 +76,167 @@ public class Combination {
 
   public static boolean isValidCombination(ArrayList<Card> cards) {
     return evaluate(cards).isPresent();
+  }
+
+  private static int combinationRank(CombinationResult result) {
+    return switch (result) {
+      case HIGH_CARD -> 0;
+      case PAIR -> 1;
+      case THREE_OF_A_KIND -> 2;
+      case STRAIGHT -> 3;
+      case FLUSH -> 4;
+      case FULL_HOUSE -> 5;
+      case FOUR_OF_A_KIND -> 6;
+      case STRAIGHT_FLUSH -> 7;
+    };
+  }
+
+  private int compareSameRankGroup(Combination other) {
+    Rank r1 = this.cards.get(0).getRank();
+    Rank r2 = other.cards.get(0).getRank();
+
+    int r = Integer.compare(
+        r1.getStrength(),
+        r2.getStrength());
+    if (r != 0)
+      return r;
+
+    int s1 = this.cards.stream()
+        .mapToInt(c -> c.getSuit().getStrength())
+        .max().orElse(0);
+
+    int s2 = other.cards.stream()
+        .mapToInt(c -> c.getSuit().getStrength())
+        .max().orElse(0);
+
+    return Integer.compare(s1, s2);
+  }
+
+  private int compareStraightLike(Combination other) {
+    Card maxA = this.cards.stream()
+        .max(Comparator.comparingInt(
+            c -> c.getRank().getStrength()))
+        .orElseThrow();
+
+    Card maxB = other.cards.stream()
+        .max(Comparator.comparingInt(
+            c -> c.getRank().getStrength()))
+        .orElseThrow();
+
+    int r = Integer.compare(
+        maxA.getRank().getStrength(),
+        maxB.getRank().getStrength());
+    if (r != 0)
+      return r;
+
+    return Integer.compare(
+        maxA.getSuit().getStrength(),
+        maxB.getSuit().getStrength());
+  }
+
+  @Override
+  public int compareTo(Combination other) {
+    if (this.cards.size() != other.cards.size()) {
+      throw new IllegalArgumentException("異なる枚数の役は比較不可");
+    }
+
+    int result = Integer.compare(
+        combinationRank(this.result),
+        combinationRank(other.result));
+    if (result != 0)
+      return result;
+
+    return switch (this.result) {
+      case HIGH_CARD -> this.cards.get(0).compareStrength(other.cards.get(0));
+      case PAIR, THREE_OF_A_KIND -> compareSameRankGroup(other);
+      case STRAIGHT, STRAIGHT_FLUSH -> compareStraightLike(other);
+      case FLUSH -> compareFlush(other);
+      case FULL_HOUSE -> compareFullHouse(other);
+      case FOUR_OF_A_KIND -> compareFourOfAKind(other);
+    };
+  }
+
+  private int compareFlush(Combination other) {
+    List<Card> a = this.cards.stream()
+        .sorted(Comparator
+            .comparingInt((Card c) -> c.getRank().getStrength())
+            .thenComparingInt(c -> c.getSuit().getStrength())
+            .reversed())
+        .toList();
+
+    List<Card> b = other.cards.stream()
+        .sorted(Comparator
+            .comparingInt((Card c) -> c.getRank().getStrength())
+            .thenComparingInt(c -> c.getSuit().getStrength())
+            .reversed())
+        .toList();
+
+    for (int i = 0; i < 5; i++) {
+      int r = Integer.compare(
+          a.get(i).getRank().getStrength(),
+          b.get(i).getRank().getStrength());
+      if (r != 0)
+        return r;
+
+      int s = Integer.compare(
+          a.get(i).getSuit().getStrength(),
+          b.get(i).getSuit().getStrength());
+      if (s != 0)
+        return s;
+    }
+
+    return 0;
+  }
+
+  private int compareFullHouse(Combination other) {
+    Rank tripleA = findRankByCount(this.cards, 3);
+    Rank tripleB = findRankByCount(other.cards, 3);
+
+    int r = Integer.compare(
+        tripleA.getStrength(),
+        tripleB.getStrength());
+    if (r != 0)
+      return r;
+
+    int s1 = maxSuitStrength(this.cards);
+    int s2 = maxSuitStrength(other.cards);
+
+    return Integer.compare(s1, s2);
+  }
+
+  private int compareFourOfAKind(Combination other) {
+    Rank fourA = findRankByCount(this.cards, 4);
+    Rank fourB = findRankByCount(other.cards, 4);
+
+    int r = Integer.compare(
+        fourA.getStrength(),
+        fourB.getStrength());
+    if (r != 0)
+      return r;
+
+    int s1 = maxSuitStrength(this.cards);
+    int s2 = maxSuitStrength(other.cards);
+
+    return Integer.compare(s1, s2);
+  }
+
+  private static Rank findRankByCount(List<Card> cards, int count) {
+    return cards.stream()
+        .collect(Collectors.groupingBy(
+            Card::getRank,
+            Collectors.counting()))
+        .entrySet().stream()
+        .filter(e -> e.getValue() == count)
+        .map(e -> e.getKey())
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private static int maxSuitStrength(List<Card> cards) {
+    return cards.stream()
+        .mapToInt(c -> c.getSuit().getStrength())
+        .max()
+        .orElse(0);
   }
 
   private static boolean isHighCard(ArrayList<Card> cards) {

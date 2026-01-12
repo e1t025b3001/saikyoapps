@@ -3,8 +3,13 @@ package team1.saikyoapps.darour.model;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
+
+import team1.saikyoapps.darour.typehandler.CombinationTypeHandler;
+import team1.saikyoapps.darour.typehandler.HandTypeHandler;
 
 @Mapper
 public interface DarourGameStateMapper {
@@ -51,9 +56,18 @@ public interface DarourGameStateMapper {
   void updateDarourGameState(DarourGameState darourGameState);
 
   @Select("""
-      SELECT game_id AS gameID, player1_hand AS player1Hand, player2_hand AS player2Hand, player3_hand AS player3Hand, current_player_index AS currentPlayerIndex, last_played_player_index AS lastPlayedPlayerIndex, table_combination AS tableCombination
+      SELECT game_id, player1_hand, player2_hand, player3_hand, current_player_index, last_played_player_index, table_combination
       FROM darour_game_state
       WHERE game_id = #{gameID}
       """)
+  @Results({
+      @Result(property = "gameID", column = "game_id"),
+      @Result(property = "player1Hand", column = "player1_hand", typeHandler = HandTypeHandler.class),
+      @Result(property = "player2Hand", column = "player2_hand", typeHandler = HandTypeHandler.class),
+      @Result(property = "player3Hand", column = "player3_hand", typeHandler = HandTypeHandler.class),
+      @Result(property = "currentPlayerIndex", column = "current_player_index"),
+      @Result(property = "lastPlayedPlayerIndex", column = "last_played_player_index"),
+      @Result(property = "tableCombination", column = "table_combination", typeHandler = CombinationTypeHandler.class)
+  })
   DarourGameState selectDarourGameStateByGameID(@Param("gameID") String gameID);
 }

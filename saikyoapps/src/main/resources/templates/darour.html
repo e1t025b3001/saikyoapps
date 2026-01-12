@@ -4,40 +4,208 @@
 <head>
   <meta charset="UTF-8" />
   <title th:text="#{title.darour}">大老二</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}" />
+  <link rel="stylesheet" th:href="@{/css/darour.css}" />
 </head>
 
-<body>
-  <th:block th:if="${matchId != null}">
+<body data-game="darour">
+  <main class="container section-center">
+    <th:block th:if="${matchId != null}">
+      <!-- Top bar with title and forfeit button -->
+      <div class="top-bar">
+        <h1 th:text="#{title.darour}">大老二</h1>
+        <form th:action="@{/match/forfeit}" method="post">
+          <input type="hidden" name="game" value="darour" />
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+          <button type="submit" class="btn secondary" th:text="#{button.forfeit}">投降</button>
+        </form>
+      </div>
 
-    <h1 th:text="'ようこそ ' + ${username} + ' さん'">ようこそ</h1>
+      <!-- Reference panel toggle button -->
+      <button id="reference-toggle" onclick="toggleReference()">?</button>
 
-    <p th:text="#{title.darour}">大老二のゲーム画面です。（ダミー画面）</p>
+      <!-- Reference panel for suits and combinations -->
+      <div id="reference-panel" class="hidden">
+        <button class="ref-close" onclick="toggleReference()">×</button>
 
-    <th:block th:if="${player1 != null && player2 != null && player3 != null}">
-      <h2>プレイヤー1: [[${player1}]]</h2>
-      <h2>プレイヤー2: [[${player2}]]</h2>
-      <h2>プレイヤー3: [[${player3}]]</h2>
+        <div class="ref-section">
+          <div class="ref-label">スート</div>
+          <div class="ref-row suit-row">
+            <span class="suit-spade">♠</span> &gt;
+            <span class="suit-heart">♥</span> &gt;
+            <span class="suit-club">♣</span> &gt;
+            <span class="suit-diamond">♦</span>
+          </div>
+        </div>
+
+        <div class="ref-section">
+          <div class="ref-label">ランク</div>
+          <div class="ref-row">
+            2 &gt; A &gt; K &gt; Q &gt; J &gt; 10 &gt; 9 &gt; ... &gt; 3
+          </div>
+        </div>
+
+        <div class="ref-section">
+          <div class="ref-label">ルール</div>
+          <div class="ref-rules">
+            <div>・同じ枚数しか出せません．</div>
+            <div>・より強い役を出す必要があります．</div>
+            <div>・全員パスすると，場のカードが捨てられます．</div>
+            <div>・手札を0枚にした人の勝ち！</div>
+          </div>
+        </div>
+
+        <div class="ref-section">
+          <div class="ref-label">5枚役の強さ</div>
+          <div class="ref-hands">
+            <div class="ref-hand">
+              <span class="ref-rank">1</span>
+              <div class="mini-cards">
+                <span class="mini-card suit-spade">10</span>
+                <span class="mini-card suit-spade">J</span>
+                <span class="mini-card suit-spade">Q</span>
+                <span class="mini-card suit-spade">K</span>
+                <span class="mini-card suit-spade">A</span>
+              </div>
+              <span class="ref-name">ロイヤルフラッシュ</span>
+            </div>
+            <div class="ref-hand">
+              <span class="ref-rank">2</span>
+              <div class="mini-cards">
+                <span class="mini-card suit-heart">5</span>
+                <span class="mini-card suit-heart">6</span>
+                <span class="mini-card suit-heart">7</span>
+                <span class="mini-card suit-heart">8</span>
+                <span class="mini-card suit-heart">9</span>
+              </div>
+              <span class="ref-name">ストレートフラッシュ</span>
+            </div>
+            <div class="ref-hand">
+              <span class="ref-rank">3</span>
+              <div class="mini-cards">
+                <span class="mini-card suit-spade">7</span>
+                <span class="mini-card suit-heart">7</span>
+                <span class="mini-card suit-club">7</span>
+                <span class="mini-card suit-diamond">7</span>
+                <span class="mini-card suit-club">K</span>
+              </div>
+              <span class="ref-name">フォーカード</span>
+            </div>
+            <div class="ref-hand">
+              <span class="ref-rank">4</span>
+              <div class="mini-cards">
+                <span class="mini-card suit-spade">Q</span>
+                <span class="mini-card suit-heart">Q</span>
+                <span class="mini-card suit-club">Q</span>
+                <span class="mini-card suit-heart">4</span>
+                <span class="mini-card suit-diamond">4</span>
+              </div>
+              <span class="ref-name">フルハウス</span>
+            </div>
+            <div class="ref-hand">
+              <span class="ref-rank">5</span>
+              <div class="mini-cards">
+                <span class="mini-card suit-club">2</span>
+                <span class="mini-card suit-club">5</span>
+                <span class="mini-card suit-club">8</span>
+                <span class="mini-card suit-club">J</span>
+                <span class="mini-card suit-club">A</span>
+              </div>
+              <span class="ref-name">フラッシュ</span>
+            </div>
+            <div class="ref-hand">
+              <span class="ref-rank">6</span>
+              <div class="mini-cards">
+                <span class="mini-card suit-diamond">3</span>
+                <span class="mini-card suit-club">4</span>
+                <span class="mini-card suit-heart">5</span>
+                <span class="mini-card suit-spade">6</span>
+                <span class="mini-card suit-diamond">7</span>
+              </div>
+              <span class="ref-name">ストレート</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        function toggleReference() {
+          document.getElementById('reference-panel').classList.toggle('hidden');
+        }
+      </script>
+
+      <div id="game-container" class="card">
+        <div id="status-bar">
+          <div id="current-turn">
+            <span id="turn-indicator"></span>
+            <span id="turn-player-name"></span>
+          </div>
+        </div>
+
+        <div id="opponents-area">
+          <div class="opponent" id="opponent-left">
+            <div class="opponent-name"></div>
+            <div class="opponent-cards">
+              <span class="card-count"></span>
+            </div>
+          </div>
+          <div class="opponent" id="opponent-right">
+            <div class="opponent-name"></div>
+            <div class="opponent-cards">
+              <span class="card-count"></span>
+            </div>
+          </div>
+        </div>
+
+        <div id="table-area">
+          <div id="table-label">場札</div>
+          <div id="table-cards"></div>
+          <div id="combination-type"></div>
+        </div>
+
+        <div id="my-area">
+          <div id="my-info">
+            <span id="my-name" th:text="${username}"></span>
+            <span id="my-card-count"></span>
+          </div>
+          <div id="my-hand"></div>
+        </div>
+
+        <div id="action-buttons">
+          <button id="play-btn" class="btn" disabled>出す</button>
+          <button id="pass-btn" class="btn secondary" disabled>パス</button>
+        </div>
+
+        <div id="message-area"></div>
+      </div>
+
+      <div id="result-overlay" class="hidden">
+        <div id="result-content">
+          <h2 id="result-title"></h2>
+          <p id="result-message"></p>
+          <a href="/" class="btn">ロビーに戻る</a>
+        </div>
+      </div>
+
     </th:block>
 
-    <!-- Handクラスがmodel内にhandとして入っているはず -->
-    <th:block th:if="${hand != null}">
-      <h2>あなたの手札: [[${hand.toString()}]]</h2>
+    <th:block th:if="${matchId == null}">
+      <p>読み込み中...</p>
+      <script>
+        (function () {
+          setTimeout(function () {
+            window.location.href = '/darour';
+          }, 1500);
+        })();
+      </script>
     </th:block>
+  </main>
 
+  <input type="hidden" id="matchId" name="matchId" th:value="${matchId}" />
+  <input type="hidden" id="username" th:value="${username}" />
+  <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
 
-    <a th:href="@{/}" th:text="#{button.return}">戻る</a>
-  </th:block>
-  <th:block th:if="${matchId == null}">
-    <!-- matchIdがないとき，少し待ってから/darourにリダイレクト -->
-    <p>読み込み中...</p>
-    <script>
-      (function () {
-        setTimeout(function () {
-          window.location.href = '/darour';
-        }, 1500);
-      })();
-    </script>
-  </th:block>
+  <script th:if="${matchId != null}" src="/js/darour.js"></script>
 </body>
 
 </html>

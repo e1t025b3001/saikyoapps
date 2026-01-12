@@ -21,6 +21,17 @@ public class Hand {
     });
   }
 
+  public boolean removeCards(Combination combination) {
+    for (Card card : combination.cards) {
+      if (!cards.remove(card)) {
+        // 手札にないカードを出そうとした場合
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   public boolean hasClubThree() {
     for (Card card : cards) {
       if (card.getSuit() == Suit.CLUB && card.getRank() == Rank.THREE) {

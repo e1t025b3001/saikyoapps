@@ -79,6 +79,24 @@ public enum Card {
     return rank;
   }
 
+  public boolean isStrongerThan(Card other) {
+    // まずランクで比較、同じランクならスートで比較
+    if (this.rank != other.rank) {
+      return this.rank.isStrongerThan(other.rank);
+    }
+    return this.suit.isStrongerThan(other.suit);
+  }
+
+  public int compareStrength(Card other) {
+    // まずランクで比較
+    int rankCompare = Integer.compare(this.rank.getStrength(), other.rank.getStrength());
+    if (rankCompare != 0) {
+      return rankCompare;
+    }
+    // 同じランクならスートで比較
+    return Integer.compare(this.suit.getStrength(), other.suit.getStrength());
+  }
+
   @Override
   public String toString() {
     return suit.toString() + rank.toString();

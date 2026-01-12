@@ -15,6 +15,10 @@ public enum Suit {
   private final Color color;
   private final int strength;
 
+  public int getStrength() {
+    return strength;
+  }
+
   Suit(String suit, Color color, int strength) {
     this.suit = suit;
     this.color = color;

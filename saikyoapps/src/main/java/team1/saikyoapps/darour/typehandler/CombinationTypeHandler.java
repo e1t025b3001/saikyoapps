@@ -26,18 +26,21 @@ public class CombinationTypeHandler extends BaseTypeHandler<Combination> {
   @Override
   public Combination getNullableResult(ResultSet rs, String columnName)
       throws SQLException {
-    return Combination.deserialize(rs.getString(columnName));
+    String value = rs.getString(columnName);
+    return value == null ? null : Combination.deserialize(value);
   }
 
   @Override
   public Combination getNullableResult(ResultSet rs, int columnIndex)
       throws SQLException {
-    return Combination.deserialize(rs.getString(columnIndex));
+    String value = rs.getString(columnIndex);
+    return value == null ? null : Combination.deserialize(value);
   }
 
   @Override
   public Combination getNullableResult(CallableStatement cs, int columnIndex)
       throws SQLException {
-    return Combination.deserialize(cs.getString(columnIndex));
+    String value = cs.getString(columnIndex);
+    return value == null ? null : Combination.deserialize(value);
   }
 }
