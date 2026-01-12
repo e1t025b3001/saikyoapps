@@ -66,6 +66,7 @@ public class MatchingController {
     }
 
     // 如果玩家狀態已經是 playing，直接導向配對成功頁面（以 players_status 的 current_game 為準）
+    // プレイ中に誤って /matching に来た場合リダイレクトする
     if (ps != null && "playing".equals(ps.getStatus())) {
       model.addAttribute("game", ps.getCurrentGame());
       model.addAttribute("waitingCount", matchingQueueMapper.countWaitingPlayersByGame(ps.getCurrentGame()));
@@ -97,6 +98,7 @@ public class MatchingController {
       return "match_success";
     }
 
+    // 正常な対戦待ち移行時，PlayerをWAITINGに登録する
     if (authentication != null && game != null) {
       // 檢查該使用者是否已有活動配對或正在遊玩
       int active = matchingQueueMapper.countActiveByUser(authentication.getName());
@@ -126,8 +128,10 @@ public class MatchingController {
     model.addAttribute("game", game != null ? game : "未選択");
 
     // 嘗試配對：只在等待人數足夠時，從等待隊列中選出所需玩家並標記為 MATCHED
+    // 対戦待ち人数が揃ったらマッチングを行う
     if (waitingCount >= requiredPlayers && game != null) {
       List<MatchingQueue> waiters = matchingQueueMapper.findFirstNWaitingByGame(game, requiredPlayers);
+
       if (waiters.size() >= requiredPlayers) {
         // 選出前 requiredPlayers 名並標記為 MATCHED，並更新 players_status 為 playing
         for (int i = 0; i < requiredPlayers; i++) {
