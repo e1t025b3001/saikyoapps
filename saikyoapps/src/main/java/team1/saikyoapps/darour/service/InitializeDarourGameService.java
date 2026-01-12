@@ -7,6 +7,7 @@ import java.util.Random;
 import org.springframework.stereotype.Service;
 
 import team1.saikyoapps.darour.model.Card;
+import team1.saikyoapps.darour.model.DarourGameState;
 import team1.saikyoapps.darour.model.Hand;
 import team1.saikyoapps.darour.model.Rank;
 import team1.saikyoapps.darour.model.Suit;
@@ -27,7 +28,43 @@ public class InitializeDarourGameService {
     this.random = random;
   }
 
-  public ArrayList<Hand> dealInitialHands() {
+  public DarourGameState createDarourGameState(String gameID) {
+    DarourGameState result = new DarourGameState();
+
+    ArrayList<Hand> hands = dealInitialHands();
+
+    result.setPlayer1Hand(hands.get(0));
+    result.setPlayer2Hand(hands.get(1));
+    result.setPlayer3Hand(hands.get(2));
+
+    // 手札が1枚少ないプレイヤー（クラブの3を持っていたプレイヤー）から開始
+    result.setCurrentPlayerIndex(findStartingPlayerIndex(hands));
+
+    result.setGameID(gameID);
+    result.setLastPlayedPlayerIndex(null);
+    result.setTableCombination(null);
+
+    return result;
+  }
+
+  private Integer findStartingPlayerIndex(ArrayList<Hand> hands) {
+    // 手札が1枚少ないプレイヤーを探す
+
+    int minIndex = 0;
+    int minSize = hands.get(0).getCards().size();
+
+    for (int i = 1; i < hands.size(); i++) {
+      int size = hands.get(i).getCards().size();
+      if (size < minSize) {
+        minSize = size;
+        minIndex = i;
+      }
+    }
+
+    return minIndex;
+  }
+
+  private ArrayList<Hand> dealInitialHands() {
     final int NUM_PLAYERS = 3;
 
     // 山札を作成

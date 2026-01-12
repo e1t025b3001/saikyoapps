@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS marubatsu_move (
 
 -- darour 用のテーブル --
 
+-- darour のマッチング情報を保存するテーブル
 CREATE TABLE IF NOT EXISTS darour_game (
   game_id VARCHAR(64) UNIQUE,
   player1 VARCHAR(255),
@@ -110,6 +111,7 @@ CREATE TABLE IF NOT EXISTS darour_game (
   player3 VARCHAR(255)
 );
 
+-- darour のゲーム状態を保存するテーブル
 CREATE TABLE IF NOT EXISTS darour_game_state (
   id IDENTITY,
   game_id VARCHAR(64),

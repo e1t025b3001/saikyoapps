@@ -8,19 +8,27 @@ import org.apache.ibatis.annotations.Select;
 
 /*
 CREATE TABLE IF NOT EXISTS darour_game (
-  id IDENTITY,
   game_id VARCHAR(64) UNIQUE,
   player1 VARCHAR(255),
   player2 VARCHAR(255),
-  player3 VARCHAR(255),
-)
+  player3 VARCHAR(255)
+);
  */
 
 @Mapper
 public interface DarourGameMapper {
   @Insert("""
-      INSERT INTO darour_game (game_id, player1, player2, player3, game_state)
-      VALUES (#{gameID}, #{player1}, #{player2}, #{player3}, #{gameState})
+      INSERT INTO darour_game (
+        game_id,
+        player1,
+        player2,
+        player3
+      ) VALUES (
+        #{gameID},
+        #{player1},
+        #{player2},
+        #{player3}
+      )
       """)
   void insertDarourGame(DarourGame darourGame);
 

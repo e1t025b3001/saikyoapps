@@ -15,6 +15,9 @@ import team1.saikyoapps.model.PlayerStatus;
 import team1.saikyoapps.model.GomokuGameMapper;
 import team1.saikyoapps.darour.model.DarourGame;
 import team1.saikyoapps.darour.model.DarourGameMapper;
+import team1.saikyoapps.darour.model.DarourGameState;
+import team1.saikyoapps.darour.model.DarourGameStateMapper;
+import team1.saikyoapps.darour.service.InitializeDarourGameService;
 import team1.saikyoapps.model.GomokuGame;
 import team1.saikyoapps.model.GomokuMoveMapper;
 import team1.saikyoapps.model.MarubatsuGameMapper;
@@ -55,6 +58,12 @@ public class MatchingController {
 
   @Autowired
   DarourGameMapper darourGameMapper;
+
+  @Autowired
+  InitializeDarourGameService initializeDarourGameService;
+
+  @Autowired
+  DarourGameStateMapper darourGameStateMapper;
 
   @GetMapping("/matching")
   public String matching(@RequestParam(name = "game", required = false) String game, Model model,
@@ -181,14 +190,19 @@ public class MatchingController {
 
             List<String> players = matchingQueueMapper.findPlayingUsersByGame("darour");
 
+            // マッチング情報を作成
             DarourGame darourGame = new DarourGame();
 
             darourGame.setGameID(newGameID);
             darourGame.setPlayer1(players.get(0));
             darourGame.setPlayer2(players.get(1));
             darourGame.setPlayer3(players.get(2));
-
             darourGameMapper.insertDarourGame(darourGame);
+
+            // ゲーム初期化サービスを呼び出し
+            DarourGameState state = initializeDarourGameService.createDarourGameState(newGameID);
+
+            darourGameStateMapper.insertDarourGameState(state);
 
             logger.info("Created darour game players: {}/{}/{}", players.get(0), players.get(1), players.get(2));
 

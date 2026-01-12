@@ -16,11 +16,26 @@ public class Combination {
     FLUSH,
     FULL_HOUSE,
     FOUR_OF_A_KIND,
-    STRAIGHT_FLUSH
+    STRAIGHT_FLUSH;
+
+    // DB保存用のシリアライズ
+    public String serialize() {
+      return this.toString();
+    }
+
+    // DB読み込み用のデシリアライズ
+    public static CombinationResult deserialize(String value) {
+      for (CombinationResult result : CombinationResult.values()) {
+        if (result.toString().equals(value)) {
+          return result;
+        }
+      }
+      throw new IllegalArgumentException("Unknown combination result: " + value);
+    }
   }
 
-  public ArrayList<Card> cards;
-  public CombinationResult result;
+  public final ArrayList<Card> cards;
+  public final CombinationResult result;
 
   private Combination(ArrayList<Card> cards) {
     this.cards = cards;
@@ -36,7 +51,7 @@ public class Combination {
 
   public static Optional<CombinationResult> evaluate(ArrayList<Card> cards) {
     return switch (cards.size()) {
-      case 1 -> Optional.of(CombinationResult.HIGH_CARD);
+      case 1 -> isHighCard(cards) ? Optional.of(CombinationResult.HIGH_CARD) : Optional.empty();
       case 2 -> isPair(cards) ? Optional.of(CombinationResult.PAIR) : Optional.empty();
       case 3 -> isThreeOfAKind(cards) ? Optional.of(CombinationResult.THREE_OF_A_KIND) : Optional.empty();
       case 5 -> {
@@ -59,15 +74,7 @@ public class Combination {
   }
 
   public static boolean isValidCombination(ArrayList<Card> cards) {
-    return switch (cards.size()) {
-      case 1 -> isHighCard(cards);
-      case 2 -> isPair(cards);
-      case 3 -> isThreeOfAKind(cards);
-      case 5 -> isFullHouse(cards) || isStraight(cards) || isFlush(cards)
-          || isFourOfAKind(cards) || isStraightFlush(cards);
-      default -> false;
-    };
-
+    return evaluate(cards).isPresent();
   }
 
   private static boolean isHighCard(ArrayList<Card> cards) {
@@ -153,5 +160,38 @@ public class Combination {
       return false;
 
     return isStraight(cards) && isFlush(cards);
+  }
+
+  // DB保存用のシリアライズ
+  public String serialize() {
+    String cardStrings = cards.stream()
+        .map(Card::serialize)
+        .collect(Collectors.joining(","));
+    return cardStrings + "|" + result.serialize();
+  }
+
+  // DB読み込み用のデシリアライズ
+  public static Combination deserialize(String value) {
+    if (value == null || value.isEmpty()) {
+      throw new IllegalArgumentException("不正なコンビネーション: " + value);
+    }
+    String[] parts = value.split("\\|");
+    if (parts.length != 2) {
+      throw new IllegalArgumentException("不正なコンビネーション: " + value);
+    }
+    String cardPart = parts[0];
+    String resultPart = parts[1];
+    String[] cardStrings = cardPart.split(",");
+    ArrayList<Card> cards = new ArrayList<>();
+    for (String cardString : cardStrings) {
+      cards.add(Card.deserialize(cardString));
+    }
+    CombinationResult result = CombinationResult.deserialize(resultPart);
+    Combination combination = new Combination(cards);
+    if (combination.result != result) {
+      throw new IllegalArgumentException("コンビネーションの評価結果が一致しません: " + value);
+    }
+
+    return combination;
   }
 }
