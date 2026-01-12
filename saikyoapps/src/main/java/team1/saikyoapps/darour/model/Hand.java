@@ -3,15 +3,9 @@ package team1.saikyoapps.darour.model;
 import java.util.ArrayList;
 
 public class Hand {
-  public static final Integer HAND_SIZE = 17;
-
   private final ArrayList<Card> cards;
 
   public Hand(ArrayList<Card> cards) {
-    if (cards.size() != HAND_SIZE) {
-      throw new IllegalArgumentException("A hand must contain exactly " + HAND_SIZE + " cards.");
-    }
-
     this.cards = cards;
   }
 
