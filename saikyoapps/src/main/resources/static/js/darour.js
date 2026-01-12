@@ -10,6 +10,33 @@
     return;
   }
 
+  // i18n messages from server
+  const i18n = {
+    cardsSuffix: document.getElementById('i18n-cards-suffix')?.value || 'cards',
+    newRound: document.getElementById('i18n-newround')?.value || 'New Round',
+    turnYours: document.getElementById('i18n-turn-yours')?.value || "It's your turn",
+    turnOther: document.getElementById('i18n-turn-other')?.value || "{0}'s turn",
+    resultWin: document.getElementById('i18n-result-win')?.value || 'Victory!',
+    resultCongrats: document.getElementById('i18n-result-congrats')?.value || 'Congratulations!',
+    resultLose: document.getElementById('i18n-result-lose')?.value || 'Defeat...',
+    resultWinner: document.getElementById('i18n-result-winner')?.value || '{0} wins',
+    errorFetchState: document.getElementById('i18n-error-fetchstate')?.value || 'Failed to get game state',
+    errorInvalidCombination: document.getElementById('i18n-error-invalidcombination')?.value || 'Invalid combination',
+    successPlayed: document.getElementById('i18n-success-played')?.value || 'Cards played',
+    errorPlayFailed: document.getElementById('i18n-error-playfailed')?.value || 'Failed to play cards. Please select a stronger combination.',
+    errorNetwork: document.getElementById('i18n-error-network')?.value || 'A network error occurred',
+    successPassed: document.getElementById('i18n-success-passed')?.value || 'Passed',
+    errorPassFailed: document.getElementById('i18n-error-passfailed')?.value || 'Failed to pass',
+    handSingle: document.getElementById('i18n-hand-single')?.value || 'Single',
+    handPair: document.getElementById('i18n-hand-pair')?.value || 'Pair',
+    handThreeOfAKind: document.getElementById('i18n-hand-threeofakind')?.value || 'Three of a Kind',
+    handStraight: document.getElementById('i18n-hand-straight')?.value || 'Straight',
+    handFlush: document.getElementById('i18n-hand-flush')?.value || 'Flush',
+    handFullHouse: document.getElementById('i18n-hand-fullhouse')?.value || 'Full House',
+    handFourOfAKind: document.getElementById('i18n-hand-fourofakind')?.value || 'Four of a Kind',
+    handStraightFlush: document.getElementById('i18n-hand-straightflush')?.value || 'Straight Flush'
+  };
+
   const POLL_INTERVAL = 1500;
   let pollTimer = null;
   let selectedCards = [];
@@ -33,14 +60,14 @@
   };
 
   const COMBINATION_NAMES = {
-    'HIGH_CARD': 'シングル',
-    'PAIR': 'ペア',
-    'THREE_OF_A_KIND': 'スリーカード',
-    'STRAIGHT': 'ストレート',
-    'FLUSH': 'フラッシュ',
-    'FULL_HOUSE': 'フルハウス',
-    'FOUR_OF_A_KIND': 'フォーカード',
-    'STRAIGHT_FLUSH': 'ストレートフラッシュ'
+    'HIGH_CARD': i18n.handSingle,
+    'PAIR': i18n.handPair,
+    'THREE_OF_A_KIND': i18n.handThreeOfAKind,
+    'STRAIGHT': i18n.handStraight,
+    'FLUSH': i18n.handFlush,
+    'FULL_HOUSE': i18n.handFullHouse,
+    'FOUR_OF_A_KIND': i18n.handFourOfAKind,
+    'STRAIGHT_FLUSH': i18n.handStraightFlush
   };
 
   function getSuitColor(suit) {
@@ -177,7 +204,7 @@
     const leftName = elements.opponentLeft.querySelector('.opponent-name');
     const leftCount = elements.opponentLeft.querySelector('.card-count');
     leftName.textContent = players[leftIdx];
-    leftCount.textContent = handCounts[leftIdx] + '枚';
+    leftCount.textContent = handCounts[leftIdx] + i18n.cardsSuffix;
 
     if (state.currentPlayerIndex === leftIdx) {
       elements.opponentLeft.classList.add('current-turn');
@@ -188,7 +215,7 @@
     const rightName = elements.opponentRight.querySelector('.opponent-name');
     const rightCount = elements.opponentRight.querySelector('.card-count');
     rightName.textContent = players[rightIdx];
-    rightCount.textContent = handCounts[rightIdx] + '枚';
+    rightCount.textContent = handCounts[rightIdx] + i18n.cardsSuffix;
 
     if (state.currentPlayerIndex === rightIdx) {
       elements.opponentRight.classList.add('current-turn');
@@ -201,7 +228,7 @@
     elements.tableCards.innerHTML = '';
 
     if (!state.tableCombination || !state.tableCombination.cards) {
-      elements.combinationType.textContent = '新しいラウンド';
+      elements.combinationType.textContent = i18n.newRound;
       return;
     }
 
@@ -228,7 +255,7 @@
       elements.myHand.appendChild(cardEl);
     });
 
-    elements.myCardCount.textContent = '(' + state.myHand.length + '枚)';
+    elements.myCardCount.textContent = '(' + state.myHand.length + i18n.cardsSuffix + ')';
   }
 
   function renderTurnStatus(state) {
@@ -238,12 +265,12 @@
     if (state.isMyTurn) {
       elements.turnIndicator.textContent = '●';
       elements.turnIndicator.classList.add('my-turn');
-      elements.turnPlayerName.textContent = 'あなたの番です';
+      elements.turnPlayerName.textContent = i18n.turnYours;
       elements.passBtn.disabled = false;
     } else {
       elements.turnIndicator.textContent = '○';
       elements.turnIndicator.classList.remove('my-turn');
-      elements.turnPlayerName.textContent = currentPlayer + ' の番です';
+      elements.turnPlayerName.textContent = i18n.turnOther.replace('{0}', currentPlayer);
       elements.passBtn.disabled = true;
     }
 
@@ -276,11 +303,11 @@
     elements.resultOverlay.classList.remove('hidden');
 
     if (state.winner === username) {
-      elements.resultTitle.textContent = '勝利！';
-      elements.resultMessage.textContent = 'おめでとうございます！';
+      elements.resultTitle.textContent = i18n.resultWin;
+      elements.resultMessage.textContent = i18n.resultCongrats;
     } else {
-      elements.resultTitle.textContent = '敗北...';
-      elements.resultMessage.textContent = state.winner + ' の勝ちです';
+      elements.resultTitle.textContent = i18n.resultLose;
+      elements.resultMessage.textContent = i18n.resultWinner.replace('{0}', state.winner);
     }
   }
 
@@ -310,7 +337,7 @@
 
       if (state.error) {
         console.error('fetchState error', state.error);
-        showMessage('ゲーム状態の取得に失敗しました', true);
+        showMessage(i18n.errorFetchState, true);
         return;
       }
 
@@ -326,7 +353,7 @@
 
     const combinationType = evaluateCombination(selectedCards);
     if (!combinationType) {
-      showMessage('無効な組み合わせです', true);
+      showMessage(i18n.errorInvalidCombination, true);
       return;
     }
 
@@ -353,16 +380,16 @@
 
       if (result.success === 'true') {
         selectedCards = [];
-        showMessage('カードを出しました');
+        showMessage(i18n.successPlayed);
         await fetchState();
       } else {
-        showMessage('カードを出せませんでした。より強い組み合わせを選んでください。', true);
+        showMessage(i18n.errorPlayFailed, true);
         elements.playBtn.disabled = false;
       }
 
     } catch (e) {
       console.error('playCards error', e);
-      showMessage('通信エラーが発生しました', true);
+      showMessage(i18n.errorNetwork, true);
       elements.playBtn.disabled = false;
     }
   }
@@ -384,16 +411,16 @@
 
       if (result.success === 'true') {
         selectedCards = [];
-        showMessage('パスしました');
+        showMessage(i18n.successPassed);
         await fetchState();
       } else {
-        showMessage('パスできませんでした', true);
+        showMessage(i18n.errorPassFailed, true);
         elements.passBtn.disabled = false;
       }
 
     } catch (e) {
       console.error('passAction error', e);
-      showMessage('通信エラーが発生しました', true);
+      showMessage(i18n.errorNetwork, true);
       elements.passBtn.disabled = false;
     }
   }
