@@ -12,7 +12,7 @@ import org.apache.ibatis.type.MappedTypes;
 
 import team1.saikyoapps.darour.model.Hand;
 
-@MappedJdbcTypes(JdbcType.CLOB)
+@MappedJdbcTypes(JdbcType.VARCHAR)
 @MappedTypes(Hand.class)
 public class HandTypeHandler extends BaseTypeHandler<Hand> {
 

@@ -177,21 +177,20 @@ public class MatchingController {
         // darour の場合は，ここでゲームを作成する
         if ("darour".equals(game)) {
           try {
-            List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("darour");
-            String p1 = playingUsers.get(0);
-            String p2 = playingUsers.get(1);
-            String p3 = playingUsers.get(2);
+            String newGameID = UUID.randomUUID().toString();
+
+            List<String> players = matchingQueueMapper.findPlayingUsersByGame("darour");
 
             DarourGame darourGame = new DarourGame();
 
-            darourGame.setPlayer1(p1);
-            darourGame.setPlayer2(p2);
-            darourGame.setPlayer3(p3);
-            darourGame.setGameState("TODO_Impl");
+            darourGame.setGameID(newGameID);
+            darourGame.setPlayer1(players.get(0));
+            darourGame.setPlayer2(players.get(1));
+            darourGame.setPlayer3(players.get(2));
 
             darourGameMapper.insertDarourGame(darourGame);
 
-            logger.info("Created darour game players: {}/{}/{}", p1, p2, p3);
+            logger.info("Created darour game players: {}/{}/{}", players.get(0), players.get(1), players.get(2));
 
           } catch (Exception ex) {
             logger.warn("Failed to insert darour_game for match: {}", ex.getMessage());

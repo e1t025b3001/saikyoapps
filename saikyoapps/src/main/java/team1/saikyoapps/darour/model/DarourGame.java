@@ -10,10 +10,18 @@ package team1.saikyoapps.darour.model;
 )
  */
 public class DarourGame {
+  String gameID;
   String player1;
   String player2;
   String player3;
-  String gameState;
+
+  public String getGameID() {
+    return gameID;
+  }
+
+  public void setGameID(String gameID) {
+    this.gameID = gameID;
+  }
 
   public String getPlayer1() {
     return player1;
@@ -38,13 +46,4 @@ public class DarourGame {
   public void setPlayer3(String player3) {
     this.player3 = player3;
   }
-
-  public String getGameState() {
-    return gameState;
-  }
-
-  public void setGameState(String gameState) {
-    this.gameState = gameState;
-  }
-
 }
