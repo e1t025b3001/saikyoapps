@@ -13,6 +13,8 @@ import team1.saikyoapps.model.MatchingQueue;
 import team1.saikyoapps.model.MatchingQueueMapper;
 import team1.saikyoapps.model.PlayerStatus;
 import team1.saikyoapps.model.GomokuGameMapper;
+import team1.saikyoapps.darour.model.DarourGame;
+import team1.saikyoapps.darour.model.DarourGameMapper;
 import team1.saikyoapps.model.GomokuGame;
 import team1.saikyoapps.model.GomokuMoveMapper;
 import team1.saikyoapps.model.MarubatsuGameMapper;
@@ -50,6 +52,9 @@ public class MatchingController {
 
   @Autowired
   MatchHistoryMapper historyMapper;
+
+  @Autowired
+  DarourGameMapper darourGameMapper;
 
   @GetMapping("/matching")
   public String matching(@RequestParam(name = "game", required = false) String game, Model model,
@@ -169,11 +174,36 @@ public class MatchingController {
           }
         }
 
+        // darour の場合は，ここでゲームを作成する
+        if ("darour".equals(game)) {
+          try {
+            List<String> playingUsers = matchingQueueMapper.findPlayingUsersByGame("darour");
+            String p1 = playingUsers.get(0);
+            String p2 = playingUsers.get(1);
+            String p3 = playingUsers.get(2);
+
+            DarourGame darourGame = new DarourGame();
+
+            darourGame.setPlayer1(p1);
+            darourGame.setPlayer2(p2);
+            darourGame.setPlayer3(p3);
+            darourGame.setGameState("TODO_Impl");
+
+            darourGameMapper.insertDarourGame(darourGame);
+
+            logger.info("Created darour game players: {}/{}/{}", p1, p2, p3);
+
+          } catch (Exception ex) {
+            logger.warn("Failed to insert darour_game for match: {}", ex.getMessage());
+          }
+        }
+
         return "match_success"; // 需建立 match_success.html
       }
     }
 
     return "matching";
+
   }
 
   // 新增 JSON 狀態 API，供前端輪詢使用
