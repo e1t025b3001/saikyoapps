@@ -2,11 +2,13 @@ package team1.saikyoapps.darour.service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 import org.springframework.stereotype.Service;
 
 import team1.saikyoapps.darour.model.Card;
+import team1.saikyoapps.darour.model.Combination;
 import team1.saikyoapps.darour.model.DarourGameState;
 import team1.saikyoapps.darour.model.Hand;
 import team1.saikyoapps.darour.model.Rank;
@@ -37,12 +39,14 @@ public class InitializeDarourGameService {
     result.setPlayer2Hand(hands.get(1));
     result.setPlayer3Hand(hands.get(2));
 
-    // 手札が1枚少ないプレイヤー（クラブの3を持っていたプレイヤー）から開始
+    // 手札が1枚少ないプレイヤー（クラブの3を持っていたプレイヤー）の次から開始
     result.setCurrentPlayerIndex(findStartingPlayerIndex(hands));
+
+    // 最初の場の組み合わせはクラブの3のみ
+    result.setTableCombination(Combination.of(new ArrayList<>(List.of(Card.of(Suit.CLUB, Rank.THREE)))));
 
     result.setGameID(gameID);
     result.setLastPlayedPlayerIndex(null);
-    result.setTableCombination(null);
 
     return result;
   }
@@ -61,7 +65,10 @@ public class InitializeDarourGameService {
       }
     }
 
-    return minIndex;
+    // 次のプレイヤーが最初の手番
+    Integer result = (minIndex + 1) % hands.size();
+
+    return result;
   }
 
   private ArrayList<Hand> dealInitialHands() {
