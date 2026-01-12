@@ -18,8 +18,12 @@ public enum Rank {
 
   private final int strength;
 
+  public int getStrength() {
+    return strength;
+  }
+
   Rank(int strength) {
-    this.strength = this.ordinal();
+    this.strength = strength;
   }
 
   public boolean isStrongerThan(Rank other) {
