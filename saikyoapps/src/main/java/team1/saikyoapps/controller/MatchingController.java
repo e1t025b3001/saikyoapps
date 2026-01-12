@@ -13,6 +13,11 @@ import team1.saikyoapps.model.MatchingQueue;
 import team1.saikyoapps.model.MatchingQueueMapper;
 import team1.saikyoapps.model.PlayerStatus;
 import team1.saikyoapps.model.GomokuGameMapper;
+import team1.saikyoapps.darour.model.DarourGame;
+import team1.saikyoapps.darour.model.DarourGameMapper;
+import team1.saikyoapps.darour.model.DarourGameState;
+import team1.saikyoapps.darour.model.DarourGameStateMapper;
+import team1.saikyoapps.darour.service.InitializeDarourGameService;
 import team1.saikyoapps.model.GomokuGame;
 import team1.saikyoapps.model.GomokuMoveMapper;
 import team1.saikyoapps.model.MarubatsuGameMapper;
@@ -51,6 +56,15 @@ public class MatchingController {
   @Autowired
   MatchHistoryMapper historyMapper;
 
+  @Autowired
+  DarourGameMapper darourGameMapper;
+
+  @Autowired
+  InitializeDarourGameService initializeDarourGameService;
+
+  @Autowired
+  DarourGameStateMapper darourGameStateMapper;
+
   @GetMapping("/matching")
   public String matching(@RequestParam(name = "game", required = false) String game, Model model,
       Authentication authentication) {
@@ -66,6 +80,7 @@ public class MatchingController {
     }
 
     // 如果玩家狀態已經是 playing，直接導向配對成功頁面（以 players_status 的 current_game 為準）
+    // プレイ中に誤って /matching に来た場合リダイレクトする
     if (ps != null && "playing".equals(ps.getStatus())) {
       model.addAttribute("game", ps.getCurrentGame());
       model.addAttribute("waitingCount", matchingQueueMapper.countWaitingPlayersByGame(ps.getCurrentGame()));
@@ -94,9 +109,18 @@ public class MatchingController {
           model.addAttribute("matchId", mg.getGameId());
       }
 
+      // darour の場合、matchId を取得してテンプレートへ渡す
+      if ("darour".equals(ps.getCurrentGame()) && authentication != null) {
+        DarourGame dg = darourGameMapper.selectDarourGameByPlayer(authentication.getName());
+        if (dg != null) {
+          model.addAttribute("matchId", dg.getGameID());
+        }
+      }
+
       return "match_success";
     }
 
+    // 正常な対戦待ち移行時，PlayerをWAITINGに登録する
     if (authentication != null && game != null) {
       // 檢查該使用者是否已有活動配對或正在遊玩
       int active = matchingQueueMapper.countActiveByUser(authentication.getName());
@@ -126,8 +150,10 @@ public class MatchingController {
     model.addAttribute("game", game != null ? game : "未選択");
 
     // 嘗試配對：只在等待人數足夠時，從等待隊列中選出所需玩家並標記為 MATCHED
+    // 対戦待ち人数が揃ったらマッチングを行う
     if (waitingCount >= requiredPlayers && game != null) {
       List<MatchingQueue> waiters = matchingQueueMapper.findFirstNWaitingByGame(game, requiredPlayers);
+
       if (waiters.size() >= requiredPlayers) {
         // 選出前 requiredPlayers 名並標記為 MATCHED，並更新 players_status 為 playing
         for (int i = 0; i < requiredPlayers; i++) {
@@ -165,11 +191,46 @@ public class MatchingController {
           }
         }
 
+        // darour の場合は，ここでゲームを作成する
+        if ("darour".equals(game)) {
+          try {
+            String newGameID = UUID.randomUUID().toString();
+
+            List<String> players = matchingQueueMapper.findPlayingUsersByGame("darour");
+
+            // マッチング情報を作成
+            DarourGame darourGame = new DarourGame();
+
+            darourGame.setGameID(newGameID);
+            darourGame.setPlayer1(players.get(0));
+            darourGame.setPlayer2(players.get(1));
+            darourGame.setPlayer3(players.get(2));
+            darourGameMapper.insertDarourGame(darourGame);
+
+            // ゲーム初期化サービスを呼び出し
+            DarourGameState state = initializeDarourGameService.createDarourGameState(newGameID);
+
+            darourGameStateMapper.insertDarourGameState(state);
+
+            model.addAttribute("matchId", newGameID);
+
+            logger.info("Created darour game players: {}/{}/{}", players.get(0), players.get(1), players.get(2));
+
+            matchingQueueMapper.updatePlayerStatus(players.get(0), "playing", game);
+            matchingQueueMapper.updatePlayerStatus(players.get(1), "playing", game);
+            matchingQueueMapper.updatePlayerStatus(players.get(2), "playing", game);
+
+          } catch (Exception ex) {
+            logger.warn("Failed to insert darour_game for match: {}", ex.getMessage());
+          }
+        }
+
         return "match_success"; // 需建立 match_success.html
       }
     }
 
     return "matching";
+
   }
 
   // 新增 JSON 狀態 API，供前端輪詢使用
@@ -260,6 +321,14 @@ public class MatchingController {
           res.put("mySymbol", "X");
         else if (user.equals(mg.getPlayerO()))
           res.put("mySymbol", "O");
+      }
+    }
+
+    // darour
+    if ("playing".equals(status) && "darour".equals(targetGame)) {
+      DarourGame dg = darourGameMapper.selectDarourGameByPlayer(user);
+      if (dg != null) {
+        res.put("gameId", dg.getGameID());
       }
     }
 
@@ -512,6 +581,16 @@ public class MatchingController {
       }
       if (mg != null)
         model.addAttribute("matchId", mg.getGameId());
+    }
+
+    // darour の場合、matchId を取得してテンプレートへ渡す
+    if ("darour".equals(game) && authentication != null) {
+      DarourGame darourGame = darourGameMapper.selectDarourGameByPlayer(authentication.getName());
+
+      if (darourGame != null) {
+        model.addAttribute("matchId", darourGame.getGameID());
+      }
+
     }
 
     model.addAttribute("game", game != null ? game : "marubatsu");

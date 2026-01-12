@@ -1,17 +1,12 @@
 package team1.saikyoapps.darour.model;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class Hand {
-  public static final Integer HAND_SIZE = 13;
-
   private final ArrayList<Card> cards;
 
   public Hand(ArrayList<Card> cards) {
-    if (cards.size() != HAND_SIZE) {
-      throw new IllegalArgumentException("A hand must contain exactly " + HAND_SIZE + " cards.");
-    }
-
     this.cards = cards;
   }
 
@@ -24,6 +19,26 @@ public class Hand {
 
       return card1.getSuit().isStrongerThan(card2.getSuit()) ? 1 : -1;
     });
+  }
+
+  public boolean removeCards(Combination combination) {
+    for (Card card : combination.cards) {
+      if (!cards.remove(card)) {
+        // 手札にないカードを出そうとした場合
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  public boolean hasClubThree() {
+    for (Card card : cards) {
+      if (card.getSuit() == Suit.CLUB && card.getRank() == Rank.THREE) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public ArrayList<Card> getCards() {
@@ -40,4 +55,26 @@ public class Hand {
 
     return handString.toString().trim();
   }
+
+  // DB保存用のシリアライズ
+  public String serialize() {
+    return cards.stream()
+        .map(Card::serialize)
+        .collect(Collectors.joining(","));
+  }
+
+  // DB読み込み用のデシリアライズ
+  public static Hand deserialize(String value) {
+    if (value == null || value.isEmpty()) {
+      return new Hand(new ArrayList<>());
+    }
+
+    String[] cardStrings = value.split(",");
+    ArrayList<Card> cards = new ArrayList<>();
+    for (String cardString : cardStrings) {
+      cards.add(Card.deserialize(cardString));
+    }
+    return new Hand(cards);
+  }
+
 }
