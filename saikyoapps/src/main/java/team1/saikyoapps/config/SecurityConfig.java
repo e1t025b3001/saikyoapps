@@ -40,7 +40,59 @@ public class SecurityConfig {
         .roles("PLAYER")
         .build();
 
-    return new InMemoryUserDetailsManager(foo, bar, buz);
+    UserDetails sky7 = User.withUsername("sky7")
+        .password("{bcrypt}$2y$05$fgf/ie7/RT8HT2sllPhsJe.qdYXAKLdiYWh4l/msdk5BLuesaWfpK")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails pico = User.withUsername("pico")
+        .password("{bcrypt}$2y$05$Tc4gsbhgrzq7.wx9Lfhq9.Dd6Q0dR5xRsv9idvSi8x4bihWW/1Wju")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails run = User.withUsername("run")
+        .password("{bcrypt}$2y$05$VPduRV82dbyF1G5eKX.PiefQm08n.t84xvcj2Gp9SwUVybPAyZdnu")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails jake = User.withUsername("jake")
+        .password("{bcrypt}$2y$05$6QByN3OEhicfc9LgktibaOiEA8cYT7Hrt0jGvFiW56Qvr3sgR9X5G")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails leaf = User.withUsername("leaf")
+        .password("{bcrypt}$2y$05$nRyVF8SdvWafD7O96gNiL.G5fa3xITlLmw1sAeNpcjQI6I8Md/IfW")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails tomo = User.withUsername("tomo")
+        .password("{bcrypt}$2y$05$nQ1hLQk12erPHtucx/rvjuWFuSEQIwBCaDmR01mfhoXSudx7PZdjq")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails wave = User.withUsername("wave")
+        .password("{bcrypt}$2y$05$Ze6K93tVkQ1W0kj4UgqTcuqLG4GqOedet09swkVhrTTb62hpCYlQW")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails fox = User.withUsername("fox")
+        .password("{bcrypt}$2y$05$TZJDAXlhUejLypXXdTOCAuTtxgNKZ/kJWRYsolTMQGYB6c0rWbcSu")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails k_5 = User.withUsername("k_5")
+        .password("{bcrypt}$2y$05$oVXKReaRIaVEm62b58XjJ.baNrXM7uLq.IZCaSbQ4G9YeAdui7uzC")
+        .roles("PLAYER")
+        .build();
+
+    UserDetails blue = User.withUsername("blue")
+        .password("{bcrypt}$2y$05$OaRg9ZMzbce0SU4QGItUWuopmLuOu5IHnsBh0Z1FZpxGS3ssH8wGy")
+        .roles("PLAYER")
+        .build();
+
+
+
+    return new InMemoryUserDetailsManager(foo, bar, buz, sky7, pico, run, jake, leaf, tomo, wave, fox, k_5, blue);
   }
 
   @Bean
