@@ -109,6 +109,14 @@ public class MatchingController {
           model.addAttribute("matchId", mg.getGameId());
       }
 
+      // darour の場合、matchId を取得してテンプレートへ渡す
+      if ("darour".equals(ps.getCurrentGame()) && authentication != null) {
+        DarourGame dg = darourGameMapper.selectDarourGameByPlayer(authentication.getName());
+        if (dg != null) {
+          model.addAttribute("matchId", dg.getGameID());
+        }
+      }
+
       return "match_success";
     }
 
@@ -204,7 +212,13 @@ public class MatchingController {
 
             darourGameStateMapper.insertDarourGameState(state);
 
+            model.addAttribute("matchId", newGameID);
+
             logger.info("Created darour game players: {}/{}/{}", players.get(0), players.get(1), players.get(2));
+
+            matchingQueueMapper.updatePlayerStatus(players.get(0), "playing", game);
+            matchingQueueMapper.updatePlayerStatus(players.get(1), "playing", game);
+            matchingQueueMapper.updatePlayerStatus(players.get(2), "playing", game);
 
           } catch (Exception ex) {
             logger.warn("Failed to insert darour_game for match: {}", ex.getMessage());
@@ -307,6 +321,14 @@ public class MatchingController {
           res.put("mySymbol", "X");
         else if (user.equals(mg.getPlayerO()))
           res.put("mySymbol", "O");
+      }
+    }
+
+    // darour
+    if ("playing".equals(status) && "darour".equals(targetGame)) {
+      DarourGame dg = darourGameMapper.selectDarourGameByPlayer(user);
+      if (dg != null) {
+        res.put("gameId", dg.getGameID());
       }
     }
 
@@ -559,6 +581,16 @@ public class MatchingController {
       }
       if (mg != null)
         model.addAttribute("matchId", mg.getGameId());
+    }
+
+    // darour の場合、matchId を取得してテンプレートへ渡す
+    if ("darour".equals(game) && authentication != null) {
+      DarourGame darourGame = darourGameMapper.selectDarourGameByPlayer(authentication.getName());
+
+      if (darourGame != null) {
+        model.addAttribute("matchId", darourGame.getGameID());
+      }
+
     }
 
     model.addAttribute("game", game != null ? game : "marubatsu");

@@ -2,6 +2,7 @@ package team1.saikyoapps.darour.model;
 
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -50,9 +51,9 @@ public interface DarourGameStateMapper {
   void updateDarourGameState(DarourGameState darourGameState);
 
   @Select("""
-      SELECT * FROM darour_game_state
+      SELECT game_id AS gameID, player1_hand AS player1Hand, player2_hand AS player2Hand, player3_hand AS player3Hand, current_player_index AS currentPlayerIndex, last_played_player_index AS lastPlayedPlayerIndex, table_combination AS tableCombination
+      FROM darour_game_state
       WHERE game_id = #{gameID}
-      LIMIT 1
       """)
-  DarourGameState selectDarourGameStateByGameID(String gameID);
+  DarourGameState selectDarourGameStateByGameID(@Param("gameID") String gameID);
 }

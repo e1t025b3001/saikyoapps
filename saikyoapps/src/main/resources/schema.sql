@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS darour_game (
 -- darour のゲーム状態を保存するテーブル
 CREATE TABLE IF NOT EXISTS darour_game_state (
   id IDENTITY,
-  game_id VARCHAR(64),
+  game_id VARCHAR(64) UNIQUE,
   player1_hand VARCHAR(1024),
   player2_hand VARCHAR(1024),
   player3_hand VARCHAR(1024),

@@ -7,23 +7,37 @@
 </head>
 
 <body>
-  <h1 th:text="'ようこそ ' + ${username} + ' さん'">ようこそ</h1>
+  <th:block th:if="${matchId != null}">
 
-  <p th:text="#{title.darour}">大老二のゲーム画面です。（ダミー画面）</p>
+    <h1 th:text="'ようこそ ' + ${username} + ' さん'">ようこそ</h1>
 
-  <th:block th:if="${player1 != null && player2 != null && player3 != null}">
-    <h2>プレイヤー1: [[${player1}]]</h2>
-    <h2>プレイヤー2: [[${player2}]]</h2>
-    <h2>プレイヤー3: [[${player3}]]</h2>
+    <p th:text="#{title.darour}">大老二のゲーム画面です。（ダミー画面）</p>
+
+    <th:block th:if="${player1 != null && player2 != null && player3 != null}">
+      <h2>プレイヤー1: [[${player1}]]</h2>
+      <h2>プレイヤー2: [[${player2}]]</h2>
+      <h2>プレイヤー3: [[${player3}]]</h2>
+    </th:block>
+
+    <!-- Handクラスがmodel内にhandとして入っているはず -->
+    <th:block th:if="${hand != null}">
+      <h2>あなたの手札: [[${hand.toString()}]]</h2>
+    </th:block>
+
+
+    <a th:href="@{/}" th:text="#{button.return}">戻る</a>
   </th:block>
-
-  <!-- Handクラスがmodel内にhandとして入っているはず -->
-  <th:block th:if="${hand != null}">
-    <h2>あなたの手札: [[${hand.toString()}]]</h2>
+  <th:block th:if="${matchId == null}">
+    <!-- matchIdがないとき，少し待ってから/darourにリダイレクト -->
+    <p>読み込み中...</p>
+    <script>
+      (function () {
+        setTimeout(function () {
+          window.location.href = '/darour';
+        }, 1500);
+      })();
+    </script>
   </th:block>
-
-
-  <a th:href="@{/}" th:text="#{button.return}">戻る</a>
 </body>
 
 </html>

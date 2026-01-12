@@ -5,7 +5,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import team1.saikyoapps.darour.model.DarourGame;
 import team1.saikyoapps.darour.model.DarourGameMapper;
@@ -20,19 +20,46 @@ public class DarourController {
   @Autowired
   DarourGameStateMapper darourGameState;
 
-  // TODO gameIDを知らないがプレイヤーの場合の処理
+  @GetMapping(value = "/darour", params = "!matchId")
+  public String darourWhenMatchIdNotPresent(Model model, Authentication authentication) {
+    // matchIdがない場合の処理
 
-  @GetMapping("/darour/{gameID}")
-  public String darour(Model model, Authentication authentication, @PathVariable String gameID) {
-    DarourGameState gameState = darourGameState.selectDarourGameStateByGameID(gameID);
+    if (authentication == null) {
+      return "redirect:/";
+    }
 
-    if (gameID == null || gameState == null) {
+    String matchId = darourGame.selectDarourGameByPlayer(authentication.getName()).getGameID();
+
+    if (matchId == null) {
+      System.out.println("DEBUG: No matchId found for user: " + authentication.getName());
+      return "darour.html";
+    }
+
+    // /darour?matchId=xxxx にリダイレクト
+    return "redirect:/darour?matchId=" + matchId;
+  }
+
+  @GetMapping(value = "/darour", params = "matchId")
+  public String darour(Model model, Authentication authentication, @RequestParam String matchId) {
+    DarourGameState gameState = darourGameState.selectDarourGameStateByGameID(matchId);
+
+    if (matchId == null || gameState == null) {
+      // 追加ログ：DB側の現状を出力してアプリが見ている行を確認
+      // System.out.println("DEBUG: matchId: " + matchId + ", gameState: " +
+      // gameState);
+      // System.out.println("DEBUG: darour_game rows:");
+      // jdbcTemplate.queryForList("SELECT * FROM DAROUR_GAME").forEach(row ->
+      // System.out.println(row));
+      // System.out.println("DEBUG: darour_game_state rows (if exists):");
+      // jdbcTemplate.queryForList("SELECT * FROM DAROUR_GAME_STATE").forEach(row ->
+      // System.out.println(row));
       return "redirect:/";
     }
 
     model.addAttribute("username", authentication.getName());
+    model.addAttribute("matchId", matchId);
 
-    DarourGame game = darourGame.selectDarourGameByPlayer(authentication.getName()).getFirst();
+    DarourGame game = darourGame.selectDarourGameByPlayer(authentication.getName());
 
     model.addAttribute("player1", game.getPlayer1());
     model.addAttribute("player2", game.getPlayer2());
