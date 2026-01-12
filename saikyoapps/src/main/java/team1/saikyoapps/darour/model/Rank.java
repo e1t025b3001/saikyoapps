@@ -48,7 +48,7 @@ public enum Rank {
       case NINE:
         return "9";
       case TEN:
-        return "10";
+        return "T";
       case JACK:
         return "J";
       case QUEEN:
@@ -62,5 +62,59 @@ public enum Rank {
       default:
         throw new IllegalArgumentException();
     }
+  }
+
+  // DB保存用のシリアライズ
+  public String serialize() {
+    switch (this) {
+      case THREE:
+        return "3";
+      case FOUR:
+        return "4";
+      case FIVE:
+        return "5";
+      case SIX:
+        return "6";
+      case SEVEN:
+        return "7";
+      case EIGHT:
+        return "8";
+      case NINE:
+        return "9";
+      case TEN:
+        return "T";
+      case JACK:
+        return "J";
+      case QUEEN:
+        return "Q";
+      case KING:
+        return "K";
+      case ACE:
+        return "A";
+      case TWO:
+        return "2";
+      default:
+        throw new IllegalArgumentException();
+    }
+  }
+
+  // DB読み込み用のデシリアライズ
+  public static Rank deserialize(String value) {
+    return switch (value) {
+      case "3" -> THREE;
+      case "4" -> FOUR;
+      case "5" -> FIVE;
+      case "6" -> SIX;
+      case "7" -> SEVEN;
+      case "8" -> EIGHT;
+      case "9" -> NINE;
+      case "T" -> TEN;
+      case "J" -> JACK;
+      case "Q" -> QUEEN;
+      case "K" -> KING;
+      case "A" -> ACE;
+      case "2" -> TWO;
+      default -> throw new IllegalArgumentException("不正なランク: " + value);
+    };
   }
 }

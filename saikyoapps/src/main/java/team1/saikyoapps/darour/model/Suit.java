@@ -37,4 +37,20 @@ public enum Suit {
   public String toString() {
     return suit;
   }
+
+  // DB保存用のシリアライズ
+  public String serialize() {
+    return suit;
+  }
+
+  // DB読み込み用のデシリアライズ
+  public static Suit deserialize(String value) {
+    for (Suit suit : Suit.values()) {
+      if (suit.suit.equals(value)) {
+        return suit;
+      }
+    }
+
+    throw new IllegalArgumentException("不正なスート: " + value);
+  }
 }

@@ -1,6 +1,7 @@
 package team1.saikyoapps.darour.model;
 
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 public class Hand {
   private final ArrayList<Card> cards;
@@ -43,4 +44,26 @@ public class Hand {
 
     return handString.toString().trim();
   }
+
+  // DB保存用のシリアライズ
+  public String serialize() {
+    return cards.stream()
+        .map(Card::serialize)
+        .collect(Collectors.joining(","));
+  }
+
+  // DB読み込み用のデシリアライズ
+  public static Hand deserialize(String value) {
+    if (value == null || value.isEmpty()) {
+      return new Hand(new ArrayList<>());
+    }
+
+    String[] cardStrings = value.split(",");
+    ArrayList<Card> cards = new ArrayList<>();
+    for (String cardString : cardStrings) {
+      cards.add(Card.deserialize(cardString));
+    }
+    return new Hand(cards);
+  }
+
 }

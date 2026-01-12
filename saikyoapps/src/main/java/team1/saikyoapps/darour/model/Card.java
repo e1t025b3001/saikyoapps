@@ -78,4 +78,29 @@ public enum Card {
   public Rank getRank() {
     return rank;
   }
+
+  @Override
+  public String toString() {
+    return suit.toString() + rank.toString();
+  }
+
+  // DB保存用のシリアライズ
+  public String serialize() {
+    return suit.serialize() + rank.serialize();
+  }
+
+  // DB読み込み用のデシリアライズ
+  public static Card deserialize(String value) {
+    if (value.length() < 2) {
+      throw new IllegalArgumentException("不正なカード: " + value);
+    }
+
+    String suitString = value.substring(0, 1);
+    String rankString = value.substring(1);
+
+    Suit suit = Suit.deserialize(suitString);
+    Rank rank = Rank.deserialize(rankString);
+
+    return Card.of(suit, rank);
+  }
 }
