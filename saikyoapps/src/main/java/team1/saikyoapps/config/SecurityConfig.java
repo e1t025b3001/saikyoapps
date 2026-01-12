@@ -41,7 +41,7 @@ public class SecurityConfig {
         .build();
 
     UserDetails sky7 = User.withUsername("sky7")
-        .password("{bcrypt}$2y$05$fgf/ie7/RT8HT2sllPhsJe.qdYXAKLdiYWh4l/msdk5BLuesaWfpK")
+        .password("{bcrypt}$2y$05$4IF41qxtz1.7Ii5vqmyJt.dOkhln235gMFtNcVmqa2NPzTjuLOSEO")
         .roles("PLAYER")
         .build();
 
