@@ -29,7 +29,7 @@
         <button class="ref-close" onclick="toggleReference()">×</button>
 
         <div class="ref-section">
-          <div class="ref-label">スート</div>
+          <div class="ref-label" th:text="#{darour.ref.suits}">スート</div>
           <div class="ref-row suit-row">
             <span class="suit-spade">♠</span> &gt;
             <span class="suit-heart">♥</span> &gt;
@@ -39,24 +39,24 @@
         </div>
 
         <div class="ref-section">
-          <div class="ref-label">ランク</div>
+          <div class="ref-label" th:text="#{darour.ref.ranks}">ランク</div>
           <div class="ref-row">
             2 &gt; A &gt; K &gt; Q &gt; J &gt; 10 &gt; 9 &gt; ... &gt; 3
           </div>
         </div>
 
         <div class="ref-section">
-          <div class="ref-label">ルール</div>
+          <div class="ref-label" th:text="#{darour.ref.rules}">ルール</div>
           <div class="ref-rules">
-            <div>・同じ枚数しか出せません．</div>
-            <div>・より強い役を出す必要があります．</div>
-            <div>・全員パスすると，場のカードが捨てられます．</div>
-            <div>・手札を0枚にした人の勝ち！</div>
+            <div th:text="'・' + #{darour.ref.rule1}">・同じ枚数しか出せません．</div>
+            <div th:text="'・' + #{darour.ref.rule2}">・より強い役を出す必要があります．</div>
+            <div th:text="'・' + #{darour.ref.rule3}">・全員パスすると，場のカードが捨てられます．</div>
+            <div th:text="'・' + #{darour.ref.rule4}">・手札を0枚にした人の勝ち！</div>
           </div>
         </div>
 
         <div class="ref-section">
-          <div class="ref-label">5枚役の強さ</div>
+          <div class="ref-label" th:text="#{darour.ref.fivecard}">5枚役の強さ</div>
           <div class="ref-hands">
             <div class="ref-hand">
               <span class="ref-rank">1</span>
@@ -67,7 +67,7 @@
                 <span class="mini-card suit-spade">K</span>
                 <span class="mini-card suit-spade">A</span>
               </div>
-              <span class="ref-name">ロイヤルフラッシュ</span>
+              <span class="ref-name" th:text="#{darour.hand.royalflush}">ロイヤルフラッシュ</span>
             </div>
             <div class="ref-hand">
               <span class="ref-rank">2</span>
@@ -78,7 +78,7 @@
                 <span class="mini-card suit-heart">8</span>
                 <span class="mini-card suit-heart">9</span>
               </div>
-              <span class="ref-name">ストレートフラッシュ</span>
+              <span class="ref-name" th:text="#{darour.hand.straightflush}">ストレートフラッシュ</span>
             </div>
             <div class="ref-hand">
               <span class="ref-rank">3</span>
@@ -89,7 +89,7 @@
                 <span class="mini-card suit-diamond">7</span>
                 <span class="mini-card suit-club">K</span>
               </div>
-              <span class="ref-name">フォーカード</span>
+              <span class="ref-name" th:text="#{darour.hand.fourofakind}">フォーカード</span>
             </div>
             <div class="ref-hand">
               <span class="ref-rank">4</span>
@@ -100,7 +100,7 @@
                 <span class="mini-card suit-heart">4</span>
                 <span class="mini-card suit-diamond">4</span>
               </div>
-              <span class="ref-name">フルハウス</span>
+              <span class="ref-name" th:text="#{darour.hand.fullhouse}">フルハウス</span>
             </div>
             <div class="ref-hand">
               <span class="ref-rank">5</span>
@@ -111,7 +111,7 @@
                 <span class="mini-card suit-club">J</span>
                 <span class="mini-card suit-club">A</span>
               </div>
-              <span class="ref-name">フラッシュ</span>
+              <span class="ref-name" th:text="#{darour.hand.flush}">フラッシュ</span>
             </div>
             <div class="ref-hand">
               <span class="ref-rank">6</span>
@@ -122,7 +122,7 @@
                 <span class="mini-card suit-spade">6</span>
                 <span class="mini-card suit-diamond">7</span>
               </div>
-              <span class="ref-name">ストレート</span>
+              <span class="ref-name" th:text="#{darour.hand.straight}">ストレート</span>
             </div>
           </div>
         </div>
@@ -158,7 +158,7 @@
         </div>
 
         <div id="table-area">
-          <div id="table-label">場札</div>
+          <div id="table-label" th:text="#{darour.table.label}">場札</div>
           <div id="table-cards"></div>
           <div id="combination-type"></div>
         </div>
@@ -172,8 +172,8 @@
         </div>
 
         <div id="action-buttons">
-          <button id="play-btn" class="btn" disabled>出す</button>
-          <button id="pass-btn" class="btn secondary" disabled>パス</button>
+          <button id="play-btn" class="btn" disabled th:text="#{darour.button.play}">出す</button>
+          <button id="pass-btn" class="btn secondary" disabled th:text="#{darour.button.pass}">パス</button>
         </div>
 
         <div id="message-area"></div>
@@ -183,14 +183,14 @@
         <div id="result-content">
           <h2 id="result-title"></h2>
           <p id="result-message"></p>
-          <a href="/" class="btn">ロビーに戻る</a>
+          <a href="/" class="btn" th:text="#{darour.button.returnlobby}">ロビーに戻る</a>
         </div>
       </div>
 
     </th:block>
 
     <th:block th:if="${matchId == null}">
-      <p>読み込み中...</p>
+      <p th:text="#{darour.loading}">読み込み中...</p>
       <script>
         (function () {
           setTimeout(function () {
@@ -204,6 +204,31 @@
   <input type="hidden" id="matchId" name="matchId" th:value="${matchId}" />
   <input type="hidden" id="username" th:value="${username}" />
   <input type="hidden" name="_csrf" th:value="${_csrf.token}" />
+
+  <!-- i18n messages for JavaScript -->
+  <input type="hidden" id="i18n-cards-suffix" th:value="#{darour.cards.suffix}" />
+  <input type="hidden" id="i18n-newround" th:value="#{darour.newround}" />
+  <input type="hidden" id="i18n-turn-yours" th:value="#{darour.turn.yours}" />
+  <input type="hidden" id="i18n-turn-other" th:value="#{darour.turn.other}" />
+  <input type="hidden" id="i18n-result-win" th:value="#{darour.result.win}" />
+  <input type="hidden" id="i18n-result-congrats" th:value="#{darour.result.congrats}" />
+  <input type="hidden" id="i18n-result-lose" th:value="#{darour.result.lose}" />
+  <input type="hidden" id="i18n-result-winner" th:value="#{darour.result.winner}" />
+  <input type="hidden" id="i18n-error-fetchstate" th:value="#{darour.error.fetchstate}" />
+  <input type="hidden" id="i18n-error-invalidcombination" th:value="#{darour.error.invalidcombination}" />
+  <input type="hidden" id="i18n-success-played" th:value="#{darour.success.played}" />
+  <input type="hidden" id="i18n-error-playfailed" th:value="#{darour.error.playfailed}" />
+  <input type="hidden" id="i18n-error-network" th:value="#{darour.error.network}" />
+  <input type="hidden" id="i18n-success-passed" th:value="#{darour.success.passed}" />
+  <input type="hidden" id="i18n-error-passfailed" th:value="#{darour.error.passfailed}" />
+  <input type="hidden" id="i18n-hand-single" th:value="#{darour.hand.single}" />
+  <input type="hidden" id="i18n-hand-pair" th:value="#{darour.hand.pair}" />
+  <input type="hidden" id="i18n-hand-threeofakind" th:value="#{darour.hand.threeofakind}" />
+  <input type="hidden" id="i18n-hand-straight" th:value="#{darour.hand.straight}" />
+  <input type="hidden" id="i18n-hand-flush" th:value="#{darour.hand.flush}" />
+  <input type="hidden" id="i18n-hand-fullhouse" th:value="#{darour.hand.fullhouse}" />
+  <input type="hidden" id="i18n-hand-fourofakind" th:value="#{darour.hand.fourofakind}" />
+  <input type="hidden" id="i18n-hand-straightflush" th:value="#{darour.hand.straightflush}" />
 
   <script th:if="${matchId != null}" src="/js/darour.js"></script>
 </body>
