@@ -14,11 +14,11 @@
       <!-- Top bar with title and forfeit button -->
       <div class="top-bar">
         <h1 th:text="#{title.darour}">大老二</h1>
-        <form th:action="@{/match/forfeit}" method="post">
+        <!-- <form th:action="@{/match/forfeit}" method="post">
           <input type="hidden" name="game" value="darour" />
           <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
           <button type="submit" class="btn secondary" th:text="#{button.forfeit}">投降</button>
-        </form>
+        </form> -->
       </div>
 
       <!-- Reference panel toggle button -->
